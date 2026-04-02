@@ -1,0 +1,21 @@
+{
+  "name": "衣物回收平台",
+  "appid": "",
+  "description": "衣物回收平台 - 用户/回收员/机构三端合一小程序",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {},
+  "h5": {},
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "minified": true
+    },
+    "usingComponents": true,
+    "optimization": {
+      "subPackages": true
+    }
+  }
+}

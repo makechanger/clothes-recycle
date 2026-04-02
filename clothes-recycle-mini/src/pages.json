@@ -1,0 +1,59 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/order/list/list",
+      "style": {
+        "navigationBarTitleText": "订单列表"
+      }
+    },
+    {
+      "path": "pages/order/create/create",
+      "style": {
+        "navigationBarTitleText": "预约回收"
+      }
+    },
+    {
+      "path": "pages/order/detail/detail",
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
+    },
+    {
+      "path": "pages/address/list/list",
+      "style": {
+        "navigationBarTitleText": "地址管理"
+      }
+    },
+    {
+      "path": "pages/address/edit/edit",
+      "style": {
+        "navigationBarTitleText": "编辑地址"
+      }
+    },
+    {
+      "path": "pages/user/user",
+      "style": {
+        "navigationBarTitleText": "个人中心"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "衣物回收平台",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5"
+  }
+}

@@ -1,0 +1,57 @@
+# ===== 服务端口 =====
+server:
+  port: 8080
+
+spring:
+  # ===== 数据源配置（MySQL 8.0） =====
+  datasource:
+    url: jdbc:mysql://localhost:3306/clothes_recycle?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # ===== 文件上传大小限制 =====
+  servlet:
+    multipart:
+      max-file-size: 5MB        # 单个文件最大 5MB
+      max-request-size: 10MB    # 单次请求最大 10MB
+
+# ===== MyBatis-Plus 配置 =====
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true                          # 数据库下划线字段自动映射为驼峰属性
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl       # 开发阶段打印 SQL 日志
+  global-config:
+    db-config:
+      id-type: auto              # 主键自增
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ===== Sa-Token 鉴权配置 =====
+sa-token:
+  token-name: Authorization      # 前端传 token 的 header 名
+  timeout: 86400                 # token 有效期 24 小时（秒）
+  active-timeout: -1             # 不启用临时活跃超时
+  is-concurrent: true            # 允许同一账号多端同时登录
+  token-style: uuid              # token 风格：UUID
+  is-log: false                  # 关闭 Sa-Token 日志
+
+# ===== Knife4j / Swagger 接口文档 =====
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn              # 文档界面中文
+
+# ===== 文件上传存储路径 =====
+file:
+  upload-path: ./uploads/
+
+# ===== 日志级别 =====
+logging:
+  level:
+    com.recycle: debug
