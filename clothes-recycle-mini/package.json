@@ -4,7 +4,9 @@
   "description": "衣物回收平台小程序",
   "main": "main.js",
   "scripts": {
-    "dev": "uni"
+    "dev": "uni",
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:mp-weixin": "uni build -p mp-weixin"
   },
   "dependencies": {
     "pinia": "^2.1.7",

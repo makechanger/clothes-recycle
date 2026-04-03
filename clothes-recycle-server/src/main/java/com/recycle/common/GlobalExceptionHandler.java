@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 全局异常处理器
@@ -64,6 +65,16 @@ public class GlobalExceptionHandler {
     public Result<?> handleIllegalArgument(IllegalArgumentException e) {
         log.warn("参数异常: {}", e.getMessage());
         return Result.error(400, e.getMessage());
+    }
+
+    /**
+     * 静态资源未找到异常（如 favicon.ico）
+     * 浏览器自动请求网站图标，项目中不存在时会触发此异常
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public Result<?> handleNoResourceFound(NoResourceFoundException e) {
+        log.debug("静态资源未找到: {}", e.getMessage());
+        return Result.error(404, "资源不存在");
     }
 
     /**

@@ -14,6 +14,13 @@
       }
     },
     {
+      "path": "pages/register/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/order/list/list",
       "style": {
         "navigationBarTitleText": "订单列表"
@@ -47,6 +54,18 @@
       "path": "pages/user/user",
       "style": {
         "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/user/change-password/change-password",
+      "style": {
+        "navigationBarTitleText": "修改密码"
+      }
+    },
+    {
+      "path": "pages/user/apply-role/apply-role",
+      "style": {
+        "navigationBarTitleText": "资质申请"
       }
     }
   ],

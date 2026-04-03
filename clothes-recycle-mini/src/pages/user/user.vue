@@ -13,8 +13,12 @@
         <text>地址管理</text>
         <text class="arrow">></text>
       </view>
-      <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/order/list/list')">
-        <text>我的订单</text>
+      <view class="menu-item" @click="goTo('/pages/user/change-password/change-password')">
+        <text>修改密码</text>
+        <text class="arrow">></text>
+      </view>
+      <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/user/apply-role/apply-role')">
+        <text>资质申请</text>
         <text class="arrow">></text>
       </view>
       <view class="menu-item logout" @click="handleLogout">

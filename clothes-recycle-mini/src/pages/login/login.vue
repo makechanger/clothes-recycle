@@ -12,11 +12,34 @@
     </view>
     <!-- 统一登录表单 -->
     <view class="login-form">
-      <input v-model="phone" class="input-field" type="text" placeholder="请输入手机号" maxlength="11" />
-      <input v-model="password" class="input-field" type="password" placeholder="请输入密码" />
+      <input
+        v-model="phone"
+        class="input-field"
+        type="text"
+        placeholder="请输入手机号"
+        maxlength="11"
+        :focus="focusField === 'phone'"
+        @focus="focusField = 'phone'"
+        @blur="focusField = ''"
+      />
+      <input
+        v-model="password"
+        class="input-field"
+        type="password"
+        placeholder="请输入密码"
+        :focus="focusField === 'password'"
+        @focus="focusField = 'password'"
+        @blur="focusField = ''"
+      />
       <button class="login-btn" @click="handleLogin">
         登 录
       </button>
+    </view>
+
+    <!-- 底部：没有账号去注册 -->
+    <view class="footer-link" @tap="goRegister">
+      <text>没有账号？</text>
+      <text class="link-text">立即注册</text>
     </view>
   </view>
 </template>
@@ -37,6 +60,8 @@ const userStore = useUserStore()
 // 登录表单
 const phone = ref('')
 const password = ref('')
+// 当前聚焦的输入框，用于控制光标显示
+const focusField = ref('')
 
 // 回退上一页
 function goBack() {
@@ -49,6 +74,11 @@ function goBack() {
       })
     }
   })
+}
+
+// 跳转注册页
+function goRegister() {
+  uni.navigateTo({ url: '/pages/register/register' })
 }
 
 // 统一登录
@@ -159,5 +189,17 @@ async function handleLogin() {
   text-align: center;
   border: none;
   margin-top: 20rpx;
+}
+
+/* 底部注册链接 */
+.footer-link {
+  margin-top: 40rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.link-text {
+  color: #07c160;
+  margin-left: 8rpx;
 }
 </style>

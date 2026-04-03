@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：Step 1.3 ✅ 已完成
+## 当前状态：方案 B 重构 ✅ 已完成（统一用户表 + 扩展表架构）
 
 ---
 
@@ -21,7 +21,7 @@
 - `http://localhost:8080/doc.html` → Knife4j 文档页面 ✅
 
 **用户手动修改：**
-- SaTokenConfig：改为 `StpLogic` 实现多账号体系（user/collector/institution/admin 四套独立鉴权）
+- SaTokenConfig：~~改为 `StpLogic` 实现多账号体系（user/collector/institution/admin 四套独立鉴权）~~ → **已被方案 B 重构简化为 2 套：StpUtil + StpLogic("admin")**
 - RecycleApplication：添加 `@MapperScan("com.recycle.mapper")`
 - application.yml：移除全局 `logic-delete-field`
 - WebConfig：添加路径末尾斜杠兼容处理
@@ -32,22 +32,25 @@
 
 **完成内容：**
 - 创建 6 张核心表：`community`、`admin`、`user`、`user_address`、`recycle_order`、`order_status_log`
+- 额外创建 `collector`（回收员表）和 `institution`（机构表）
 - 所有表均含主键自增、`created_at` 默认 CURRENT_TIMESTAMP
-- `user` 表：openid 唯一索引、phone 索引、community_id 索引
+- `user` 表：phone 索引、community_id 索引
 - `recycle_order` 表：order_no 唯一索引、user_id / collector_id / status / created_at 索引
 - `order_status_log` 表：order_id 索引
 - `admin` 表：username 唯一索引
 - 插入 5 条测试社区数据、1 条默认管理员（admin/admin123）
+- 插入测试数据：用户（13800000001）、回收员（13800000002）、机构（13800000003），密码均为 123456
 
 **验证结果：**
-- 6 张表全部存在 ✅
+- 所有表全部存在 ✅
 - 字段类型、索引、默认值均正确 ✅
-- 社区测试数据 5 条、管理员 1 条插入成功 ✅
+- 测试数据插入成功 ✅
 
 **SQL 脚本位置：** `src/main/resources/sql/init_tables.sql`
 
 **注意事项：**
 - MySQL 客户端连接需指定 `--default-character-set=utf8mb4`，否则中文数据会因 gbk 编码截断
+- `user` 是 MySQL 保留字，Entity 中需用 `@TableName("\`user\`")` 转义
 
 ---
 
@@ -64,4 +67,203 @@
 
 ---
 
-### 下一步：Step 1.4 小程序项目初始化与角色路由骨架
+### Step 1.4 🔴 小程序项目初始化与角色路由骨架（3h）— ✅ 2026-04-02 完成
+
+**完成内容：**
+- UniApp + Vue 3 项目创建，安装 uView Plus 和 Pinia
+- 封装 `uni.request` 统一请求工具（`utils/request.js`）
+- Pinia 用户状态管理（`store/user.js`），存储 token、role、userInfo
+- 自定义 TabBar 组件（`components/custom-tabbar/custom-tabbar.vue`），根据角色动态显示不同导航
+- 页面骨架：首页、登录页、预约回收页、订单列表页、订单详情页、个人中心页、地址列表/编辑页
+- `pages.json` 路由配置完成
+
+**验证结果：**
+- 编译到微信小程序成功 ✅
+- 各页面骨架可正常访问 ✅
+
+---
+
+### Step 1.5 🔴 后端 - 统一登录与注册接口（3h）— ✅ 2026-04-03 完成
+
+**重大设计变更：** 放弃微信 openid 登录方案，改为**手机号+密码**统一登录。原因：使用微信测试号限制多，手机号+密码方案更简单直接。
+
+**完成内容：**
+- 统一登录接口 `POST /api/auth/login`：三种角色（用户/回收员/机构）共用一个登录入口，后端根据手机号自动识别角色（依次查 user → collector → institution 表）
+- 用户注册接口 `POST /api/auth/register`：所有角色先注册为普通用户（USER），后续通过资质申请升级角色
+- Sa-Token 多账号体系：~~用户用默认 StpUtil，回收员用 StpLogic("collector")，机构用 StpLogic("institution")~~ → **已被方案 B 重构统一为 StpUtil**
+- Entity 类：User.java（`@TableName("\`user\`")`）、Collector.java、Institution.java
+- Mapper 类：UserMapper、CollectorMapper、InstitutionMapper
+- DTO 类：LoginRequest、LoginResponse、RegisterRequest
+- Service 类：AuthService（login + register 方法）
+- Controller 类：AuthController（`/api/auth/login` + `/api/auth/register`）
+- SaTokenConfig 放行：`/api/auth/login`、`/api/auth/register`
+
+**新增文件：**
+- `dto/RegisterRequest.java` — 注册请求 DTO（phone, password, name）
+- `dto/LoginRequest.java` — 登录请求 DTO（phone, password）
+- `dto/LoginResponse.java` — 登录响应 DTO（token, role, userInfo）
+- `controller/AuthController.java` — 统一登录/注册控制器
+- `service/AuthService.java` — 统一登录/注册服务
+- `entity/User.java`、`entity/Collector.java`、`entity/Institution.java`
+- `mapper/UserMapper.java`、`mapper/CollectorMapper.java`、`mapper/InstitutionMapper.java`
+
+**验证结果：**
+- 用户登录（13800000001/123456）→ 返回 token + role=USER ✅
+- 回收员登录（13800000002/123456）→ 返回 token + role=COLLECTOR ✅
+- 机构登录（13800000003/123456）→ 返回 token + role=INSTITUTION ✅
+- 错误密码 → 400 "密码错误" ✅
+- 未注册手机号 → 400 "手机号未注册" ✅
+- 用户注册 → 编译通过 ✅
+
+**Bug 修复：**
+- JDBC URL `characterEncoding=utf8mb4` → 改为 `characterEncoding=UTF-8`（Java 不支持 utf8mb4 编码名）
+- `@TableName("user")` → `@TableName("\`user\`")`（user 是 MySQL 保留字）
+
+---
+
+### Step 1.5+ 🔴 小程序 - 登录页对接（1h）— ✅ 2026-04-03 完成
+
+**完成内容：**
+- 登录页（`pages/login/login.vue`）对接后端统一登录接口
+- 登录成功后存储 token、role、userInfo 到 Pinia + localStorage
+- 根据角色跳转到对应首页
+
+---
+
+### 进行中：注册 + 修改密码 + 资质申请功能
+
+**计划步骤（详见 plan 文件）：**
+- Step A ✅：后端用户注册接口（已完成）
+- Step B ✅：前端注册页面（已完成）
+- Step C ✅：后端修改密码接口（已完成，后被方案 B 重构统一）
+- Step D ✅：前端修改密码页面（已完成，后被方案 B 重构统一）
+- Step E ✅：后端资质申请 + 管理员审批接口（已完成，后被方案 B 重构优化）
+- Step F ✅：前端资质申请页面（已完成）
+- Step G ✅：更新进度文档（当前）
+
+---
+
+### Step B 🔴 前端注册页面 — ✅ 2026-04-03 完成
+
+**完成内容：**
+- 新增注册页面 `pages/register/register.vue`：手机号+密码+确认密码表单（姓名改为下单时再要求实名）
+- `pages.json` 添加注册页路由（自定义导航栏）
+- `pages/login/login.vue` 底部添加"没有账号？立即注册"链接
+- 注册成功后自动登录并跳转首页
+- 前端校验：手机号格式、密码至少6位、两次密码一致
+
+**额外修复：**
+- `GlobalExceptionHandler` 添加 `NoResourceFoundException` 处理（浏览器请求 favicon.ico 不再返回 500）
+- `request.js` 的 `BASE_URL` 改为局域网 IP（真机调试需要）
+- 登录页和注册页 input 添加 focus/blur 控制（修复光标不消失问题，用户自行移除了该方案）
+
+**设计变更：**
+- 注册时不再要求填写姓名，实名信息改为用户操作订单时再要求填写
+
+**验证结果：**
+- 登录页→注册页跳转正常 ✅
+- 注册新用户→自动登录→跳转首页 ✅
+- 真机调试网络连接正常 ✅
+
+---
+
+### Step C 🔴 后端修改密码接口 — ✅ 2026-04-03 完成
+
+**完成内容：**
+- 新增 `ChangePasswordRequest` DTO（oldPassword, newPassword）
+- `AuthService` 添加修改密码方法（校验旧密码、更新新密码）
+- `UserController` 添加 `POST /api/user/changePassword` 统一修改密码入口
+- `CollectorController` 和 `InstitutionController` 也曾添加各自的修改密码接口（后被方案 B 重构移除）
+
+---
+
+### Step D 🔴 前端修改密码页面 — ✅ 2026-04-03 完成
+
+**完成内容：**
+- 新增修改密码页面 `pages/user/change-password/change-password.vue`
+- 表单：旧密码、新密码、确认新密码
+- 前端校验：旧密码必填、新密码至少6位、两次密码一致、新旧密码不能相同
+- 修改成功后自动退出登录，要求重新登录
+- 所有角色统一调用 `/api/user/changePassword`
+
+---
+
+### Step E 🔴 后端资质申请 + 管理员审批接口 — ✅ 2026-04-03 完成
+
+**完成内容：**
+- 新增 `RoleApplication` 实体类（role_application 表）
+- 新增 `RoleApplicationMapper`
+- 新增 `RoleApplicationRequest` DTO（applyRole, name, idCardPhoto, address, contactPerson）
+- 新增 `RoleApplicationService`：
+  - `apply()`：提交资质申请（校验角色合法性、必填字段、防重复提交）
+  - `getMyApplications()`：查询用户的申请记录
+  - `getPendingApplications()`：查询所有待审核申请（管理员用）
+  - `approve()`：管理员审批通过（升级角色 + 插入扩展记录）
+  - `reject()`：管理员审批拒绝
+- `UserController` 添加 `POST /api/user/applyRole` 和 `GET /api/user/myApplications`
+- `AdminController` 添加审批接口
+
+**新增数据库表：**
+- `role_application` 表（SQL 在 init_tables.sql 中）
+
+---
+
+### Step F 🔴 前端资质申请页面 — ✅ 2026-04-03 完成
+
+**完成内容：**
+- 新增资质申请页面，支持选择申请回收员或机构
+- 回收员申请：填写姓名、上传身份证照片
+- 机构申请：填写机构名称、地址、联系人
+- 申请提交后可查看申请记录和审核状态
+
+---
+
+### 🔧 方案 B 重大重构：统一用户表 + 扩展表架构 — ✅ 2026-04-03 完成
+
+**重构原因：**
+原架构中角色升级（审批通过）时会**删除 user 表记录**，将数据迁移到 collector/institution 表。这存在严重风险：
+- `recycle_order.user_id` 外键引用会断裂
+- `user_address.user_id` 外键引用会断裂
+- 角色无法回退（降级）
+- 三张表各自存储 phone/passwordHash，登录需要级联查三张表
+
+**新架构（方案 B）：**
+- **user 表永远保留**，添加 `role` 字段（USER/COLLECTOR/INSTITUTION）标识角色
+- **collector/institution 改为扩展信息表**，通过 `user_id` 关联，去掉 phone/passwordHash
+- **登录只查 user 表**，通过 user.role 判断角色
+- **角色升级 = UPDATE user.role + INSERT 扩展记录**（不删除任何数据）
+- **Sa-Token 简化为 2 套**：StpUtil（所有用户）+ StpLogic("admin")（管理员）
+
+**数据库变更：**
+- `user` 表添加 `role` 字段（VARCHAR(20)，默认 'USER'）
+- `collector` 表重建为扩展表（去掉 phone/passwordHash，添加 user_id）
+- `institution` 表重建为扩展表（去掉 phone/passwordHash，添加 user_id）
+- SQL 脚本：`src/main/resources/sql/step2_refactor_role.sql`
+
+**后端修改文件：**
+| 文件 | 修改内容 |
+|---|---|
+| `entity/User.java` | 添加 `role` 字段 |
+| `entity/Collector.java` | 改为扩展表结构（userId，去掉 phone/passwordHash/healthCertPhoto） |
+| `entity/Institution.java` | 改为扩展表结构（userId，去掉 phone/passwordHash） |
+| `service/AuthService.java` | login 只查 user 表，统一 StpUtil，合并 changePassword，新增 buildUserInfoByRole |
+| `config/SaTokenConfig.java` | 去掉多套 StpLogic，所有用户路由统一用 StpUtil.checkLogin() |
+| `service/RoleApplicationService.java` | approve() 改为 UPDATE role + INSERT 扩展记录（不删除 user） |
+| `controller/UserController.java` | 统一修改密码入口 |
+| `controller/CollectorController.java` | 简化为空壳（删除 changePassword） |
+| `controller/InstitutionController.java` | 简化为空壳（删除 changePassword） |
+
+**前端修改文件：**
+| 文件 | 修改内容 |
+|---|---|
+| `change-password.vue` | 所有角色统一调用 `/api/user/changePassword` |
+
+**验证结果：**
+- 用户登录（13800000001/123456）→ role=USER ✅
+- 回收员登录（13800000002/123456）→ role=COLLECTOR，返回扩展信息 ✅
+- 机构登录（13800000003/123456）→ role=INSTITUTION，返回扩展信息 ✅
+- 修改密码（所有角色统一接口）→ 成功 ✅
+- user 表记录在角色升级后保留 → 外键引用安全 ✅
+- 编译通过 ✅
+
+### 下一步：开始核心业务功能开发（预约回收、订单管理等）

@@ -3,8 +3,21 @@
  * 功能：自动携带 token、统一错误处理、loading 控制
  */
 
-// 后端 API 基础地址（开发环境）
-const BASE_URL = 'http://localhost:8080'
+// 后端 API 基础地址
+// 本地开发（微信开发者工具模拟器）用 localhost，真机调试/上线用局域网 IP 或服务器地址
+const ENV_CONFIG = {
+  // 本地开发环境（模拟器）
+  development: 'http://localhost:8080',
+  // 真机调试 / 体验版（改成你电脑的局域网 IP）
+  trial: 'http://192.168.46.61:8080',
+  // 正式上线环境（部署后改成服务器域名）
+  production: 'http://192.168.46.61:8080'
+}
+
+// 自动获取当前运行环境，选择对应的 API 地址
+const { miniProgram } = uni.getAccountInfoSync()
+const envVersion = miniProgram?.envVersion || 'development'
+const BASE_URL = ENV_CONFIG[envVersion] || ENV_CONFIG.development
 
 /**
  * 发起请求
