@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：方案 B 重构 ✅ 已完成（统一用户表 + 扩展表架构）
+## 当前状态：第 2 周核心业务开发中 — Step 2.1~2.2 ✅ 已完成
 
 ---
 
@@ -266,4 +266,53 @@
 - user 表记录在角色升级后保留 → 外键引用安全 ✅
 - 编译通过 ✅
 
-### 下一步：开始核心业务功能开发（预约回收、订单管理等）
+### 下一步：Step 2.3 订单实体 + 状态日志基础设施
+
+---
+
+### Step 2.1 🔴 后端 - 社区列表 + 地址 CRUD 接口 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- Community 实体 + CommunityMapper
+- UserAddress 实体 + UserAddressMapper
+- UserAddressRequest DTO（新增/编辑地址请求参数）
+- UserAddressService（列表、详情、新增、编辑、删除、设默认，含地址归属校验）
+- CommonController：`GET /api/common/community/list`（无需登录，已在 SaTokenConfig 放行）
+- UserController 新增 6 个地址接口：
+  - `GET /api/user/address/list` — 我的地址列表
+  - `GET /api/user/address/{id}` — 地址详情
+  - `POST /api/user/address/create` — 新增地址
+  - `POST /api/user/address/{id}/update` — 编辑地址
+  - `POST /api/user/address/{id}/delete` — 删除地址
+  - `POST /api/user/address/{id}/setDefault` — 设置默认地址
+
+**新增文件：**
+- `entity/Community.java`
+- `entity/UserAddress.java`
+- `mapper/CommunityMapper.java`
+- `mapper/UserAddressMapper.java`
+- `dto/UserAddressRequest.java`
+- `service/UserAddressService.java`
+- `controller/CommonController.java`
+
+**验证结果：**
+- 编译通过 ✅
+- 用户测试通过 ✅
+
+---
+
+### Step 2.2 🔴 小程序 - 地址管理页面 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- 地址列表页 `address/list/list.vue`：展示所有地址，默认地址排前，支持新增/编辑/删除/设默认操作
+- 地址编辑页 `address/edit/edit.vue`：新增/编辑模式自动切换（通过 URL 参数 `?id=xxx`），省市区 `<picker mode="region">` 选择器，表单校验（姓名、手机号格式、地区、详细地址）
+- `onShow` 每次返回自动刷新列表
+- 删除操作有二次确认弹窗
+- 保存成功后延迟 800ms 自动返回列表页
+
+**修改文件：**
+- `pages/address/list/list.vue`（从骨架填充为完整页面）
+- `pages/address/edit/edit.vue`（从骨架填充为完整页面）
+
+**验证结果：**
+- 用户测试通过 ✅

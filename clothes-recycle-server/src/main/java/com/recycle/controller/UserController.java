@@ -4,12 +4,17 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.recycle.common.Result;
 import com.recycle.dto.ChangePasswordRequest;
 import com.recycle.dto.RoleApplicationRequest;
+import com.recycle.dto.UserAddressRequest;
+import com.recycle.entity.UserAddress;
 import com.recycle.service.AuthService;
 import com.recycle.service.RoleApplicationService;
+import com.recycle.service.UserAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 用户端控制器
@@ -25,6 +30,7 @@ public class UserController {
 
     private final AuthService authService;
     private final RoleApplicationService roleApplicationService;
+    private final UserAddressService userAddressService;
 
     /**
      * 修改密码（所有角色通用）
@@ -60,5 +66,77 @@ public class UserController {
     public Result<?> myApplications() {
         Long userId = StpUtil.getLoginIdAsLong();
         return Result.success(roleApplicationService.getMyApplications(userId));
+    }
+
+    // ==================== 地址管理接口 ====================
+
+    /**
+     * 获取当前用户的地址列表
+     * 默认地址排在最前面，其余按创建时间倒序
+     */
+    @Operation(summary = "获取我的地址列表")
+    @GetMapping("/address/list")
+    public Result<List<UserAddress>> addressList() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(userAddressService.listByUserId(userId));
+    }
+
+    /**
+     * 获取地址详情
+     * 包含归属校验，只能查看自己的地址
+     */
+    @Operation(summary = "获取地址详情")
+    @GetMapping("/address/{id}")
+    public Result<UserAddress> addressDetail(@PathVariable Long id) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(userAddressService.getById(id, userId));
+    }
+
+    /**
+     * 新增地址
+     * 如果 isDefault=1，会自动取消其他默认地址
+     */
+    @Operation(summary = "新增地址")
+    @PostMapping("/address/create")
+    public Result<?> addressCreate(@RequestBody UserAddressRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        userAddressService.create(userId, request);
+        return Result.success();
+    }
+
+    /**
+     * 编辑地址
+     * 包含归属校验，只能编辑自己的地址
+     */
+    @Operation(summary = "编辑地址")
+    @PostMapping("/address/{id}/update")
+    public Result<?> addressUpdate(@PathVariable Long id, @RequestBody UserAddressRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        userAddressService.update(id, userId, request);
+        return Result.success();
+    }
+
+    /**
+     * 删除地址
+     * 包含归属校验，只能删除自己的地址
+     */
+    @Operation(summary = "删除地址")
+    @PostMapping("/address/{id}/delete")
+    public Result<?> addressDelete(@PathVariable Long id) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        userAddressService.delete(id, userId);
+        return Result.success();
+    }
+
+    /**
+     * 设置默认地址
+     * 会先取消该用户所有默认地址，再将指定地址设为默认
+     */
+    @Operation(summary = "设置默认地址")
+    @PostMapping("/address/{id}/setDefault")
+    public Result<?> addressSetDefault(@PathVariable Long id) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        userAddressService.setDefault(id, userId);
+        return Result.success();
     }
 }

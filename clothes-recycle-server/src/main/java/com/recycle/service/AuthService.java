@@ -65,7 +65,7 @@ public class AuthService {
             throw new BusinessException(403, "账号已被禁用或注销");
         }
 
-        // 4. 统一使用 StpUtil 登录（不再区分多套鉴权体系）
+        // 4. 统一使用 StpUtil 登录
         StpUtil.login(user.getId());
         String token = StpUtil.getTokenValue();
         String role = user.getRole();
