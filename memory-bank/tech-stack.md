@@ -261,7 +261,46 @@ StpUtil.checkLogin();            // 校验（注解或拦截器）
 
 ---
 
-## 八、开发环境检查清单
+## 八、本地开发启动命令
+
+在 VSCode 中打开项目根目录 `ClothesRecycle`，使用 bash 终端分别启动后端和前端。
+
+### 终端 1：Spring Boot 后端（热重载）
+
+```bash
+cd clothes-recycle-server
+JAVA_HOME="/c/Program Files/Java/jdk-17" /c/Maven/apache-maven-3.6.3/bin/mvn spring-boot:run
+```
+
+- 项目已引入 `spring-boot-devtools`，启动后修改 Java 文件保存即自动重启
+- 默认端口 `8080`，API 文档地址：`http://localhost:8080/doc.html`
+
+### 终端 2：小程序前端（热重载）
+
+```bash
+cd clothes-recycle-mini
+npm run dev:mp-weixin
+```
+
+- 编译输出目录：`clothes-recycle-mini/dist/dev/mp-weixin`
+- 打开**微信开发者工具**，导入上述目录作为项目
+- 修改 `.vue` 文件保存后，Vite 自动编译，微信开发者工具自动刷新预览
+
+### 仅编译（不启动服务）
+
+```bash
+# 后端编译检查
+cd clothes-recycle-server
+JAVA_HOME="/c/Program Files/Java/jdk-17" /c/Maven/apache-maven-3.6.3/bin/mvn compile -q
+
+# 前端生产构建
+cd clothes-recycle-mini
+npm run build:mp-weixin
+```
+
+---
+
+## 九、开发环境检查清单
 
 开发前确认以下环境就绪：
 

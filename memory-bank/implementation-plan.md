@@ -92,14 +92,14 @@
 
 ### Day 8-9：地址管理 + 订单基础
 
-#### Step 2.1 🔴 后端 - 社区列表 + 地址 CRUD 接口（3h）
+#### Step 2.1 ✅ 后端 - 社区列表 + 地址 CRUD 接口（3h）— 2026-04-04 完成
 - Community 实体 + Mapper，GET /api/common/community/list
 - UserAddress 实体 + Mapper + Service，地址增删改查 + 设默认
 - 接口挂在 UserController 下：/api/user/address/**
 - 地址归属校验：只能操作自己的地址（StpUtil.getLoginIdAsLong()）
 - **验证**：Knife4j 调用社区列表返回 5 条数据；地址 CRUD 全流程 + 越权拦截
 
-#### Step 2.2 🔴 小程序 - 地址管理页面（2h）
+#### Step 2.2 ✅ 小程序 - 地址管理页面（2h）— 2026-04-04 完成
 - 依赖: Step 2.1
 - 填充 address/list/list.vue 和 address/edit/edit.vue 骨架
 - 省市区选择器使用 `<picker mode=”region”>`
