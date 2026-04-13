@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：第 2 周核心业务开发中 — Step 2.1~2.2 ✅ 已完成
+## 当前状态：第 2 周核心业务开发 ✅ 全部完成，第 3 周待开发
 
 ---
 
@@ -316,3 +316,192 @@
 
 **验证结果：**
 - 用户测试通过 ✅
+
+---
+
+### Step 2.3 🔴 后端 - 订单实体 + 状态日志基础设施 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- RecycleOrder 实体（含 orderNo、userId、collectorId、addressSnapshot、appointmentDate、timeSlotStart/End、clothesCategories、estimatedWeight、actualWeight、pointsAwarded、photos、remark、status、各时间戳字段）
+- OrderStatusLog 实体（orderId、fromStatus、toStatus、operatorId、operatorRole、remark）
+- RecycleOrderMapper、OrderStatusLogMapper
+- OrderStatusLogService：记录每次状态变更日志
+
+**验证结果：**
+- 编译通过 ✅
+
+---
+
+### Step 2.4 🔴 后端 - 文件上传接口 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- CommonController 添加 `POST /api/common/upload`
+- 保存到 `./uploads/` 目录，文件名使用 UUID 防重复
+- 后端限制单文件最大 5MB（application.yml 配置）
+- 返回相对路径 `/uploads/xxx.jpg`
+
+**验证结果：**
+- 编译通过 ✅
+
+---
+
+### Step 2.5 🔴 后端 - 用户订单接口 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- CreateOrderRequest DTO（addressId、appointmentDate、timeSlotStart/End、estimatedWeight、clothesCategories、photos、remark）
+- RecycleOrderService：
+  - `createOrder()`：生成订单号（RC + yyyyMMddHHmmss + 4位随机数）、地址快照序列化为 JSON、衣物分类/照片序列化为 JSON
+  - `listByUser()`：按状态筛选用户订单
+  - `getDetail()`：获取订单详情（含归属校验）
+  - `cancelOrder()`：仅 status 0/1 可取消
+  - `confirmOrder()`：status 3→4，发放积分（actualWeight × 10，取整）
+- UserController 新增 5 个订单接口：
+  - `POST /api/user/order/create` — 创建订单
+  - `GET /api/user/order/list` — 订单列表（支持 ?status= 筛选）
+  - `GET /api/user/order/{id}` — 订单详情
+  - `POST /api/user/order/{id}/cancel` — 取消订单
+  - `POST /api/user/order/{id}/confirm` — 确认完成
+
+**新增文件：**
+- `dto/CreateOrderRequest.java`
+- `service/RecycleOrderService.java`
+
+**验证结果：**
+- 编译通过 ✅
+
+---
+
+### Step 2.6 🔴 后端 - 回收员订单接口 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- CompleteWeighingRequest DTO（actualWeight）
+- CollectorOrderService：
+  - `checkCollectorRole(userId)`：校验 user.role == "COLLECTOR"
+  - `pendingList(userId)`：查询所有 status=0 的待接单订单
+  - `myOrders(userId, status)`：查询回收员已接的订单（collectorId=userId）
+  - `acceptOrder(orderId, userId)`：接单，乐观更新 WHERE status=0 防并发
+  - `startPickup(orderId, userId)`：开始上门，status 1→2
+  - `completeWeighing(orderId, userId, actualWeight)`：完成称重，status 2→3
+  - `getMyOrder(orderId, userId)`：订单归属校验
+- CollectorController 5 个接口：
+  - `GET /api/collector/order/pending` — 待接单列表
+  - `GET /api/collector/order/list` — 我的订单列表
+  - `POST /api/collector/order/{id}/accept` — 接单
+  - `POST /api/collector/order/{id}/pickup` — 开始上门
+  - `POST /api/collector/order/{id}/complete` — 完成称重
+
+**新增文件：**
+- `dto/CompleteWeighingRequest.java`
+- `service/CollectorOrderService.java`
+
+**数据库变更：**
+- `ALTER TABLE recycle_order ADD COLUMN accepted_at DATETIME DEFAULT NULL`（接单时间字段）
+
+**验证结果：**
+- 编译通过 ✅
+- 回收员接单→上门→称重 全流程 ✅
+
+---
+
+### Step 2.7 🔴 小程序 - 预约回收页面 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- 完整重写 `order/create/create.vue`：
+  - 地址选择：通过 `uni.$once('selectAddress')` 事件通道从地址列表页接收选中地址
+  - 日期选择：`<picker mode="date">`，范围今天到30天后
+  - 时间段选择：`<picker mode="multiSelector">`，开始时间 08:00-18:00，结束时间 09:00-20:00，联动校验
+  - 衣物分类：10 个标签多选（外套、裤子、衬衫、T恤、裙子、羽绒服、毛衣、鞋子、包包、其他）
+  - 预估重量：digit 输入框
+  - 照片上传：最多 6 张，canvas 压缩（maxWidth 1200px，quality 0.7，确保 ≤1MB）
+  - 备注：textarea，最多 200 字
+  - 表单校验 + 提交到 `POST /api/user/order/create`
+  - 成功后 `uni.reLaunch` 跳转订单列表
+- 修改 `address/list/list.vue`：
+  - 添加选择模式（URL 参数 `?mode=select`）
+  - 选择模式下点击地址 → `uni.$emit('selectAddress', address)` + `uni.navigateBack()`
+
+**修改文件：**
+- `pages/order/create/create.vue`（完整重写）
+- `pages/address/list/list.vue`（添加选择模式）
+
+**验证结果：**
+- 完整下单流程测试通过 ✅
+
+---
+
+### Step 2.8 🔴 小程序 - 订单列表 + 详情页 — ✅ 2026-04-04 完成
+
+**完成内容：**
+- 完整重写 `order/list/list.vue`：
+  - 状态 Tab 筛选栏：全部(null)、待接单(0)、进行中('ongoing')、待确认(3)、已完成(4)、已取消(5)
+  - "进行中" Tab 合并状态 1+2（Promise.all 并行请求后合并排序）
+  - 订单卡片：订单号、彩色状态标签、地址（从 JSON 快照解析）、预约时间、衣物分类、重量
+  - 操作按钮：取消订单（status 0/1）、确认完成（status 3，显示积分预览）
+  - 点击卡片跳转详情页
+  - TabBar current=2（用户角色"我的订单"）
+- 完整重写 `order/detail/detail.vue`：
+  - 状态横幅：不同状态不同渐变背景色 + 状态描述文字
+  - 上门地址：从 addressSnapshot JSON 解析
+  - 预约信息：日期、时段、衣物分类、预估重量、实际重量、获得积分、备注
+  - 衣物照片：展示 + 点击预览（uni.previewImage）
+  - 订单信息：订单编号、下单时间、接单时间、完成时间、取消时间
+  - 底部操作按钮：取消订单（status 0/1）、确认完成（status 3）
+
+**修改文件：**
+- `pages/order/list/list.vue`（完整重写）
+- `pages/order/detail/detail.vue`（完整重写）
+
+**验证结果：**
+- 用户端订单列表 + 详情 + 取消/确认操作 全流程测试通过 ✅
+- 回收员端暂未适配（order/list 和 detail 仅调用用户 API）→ 待 Step 2.9 实现
+
+### 下一步：Step 2.9 小程序 - 回收员前端
+
+---
+
+### Step 2.9 🔴 小程序 - 回收员前端 — ✅ 2026-04-10 完成
+
+**完成内容：**
+
+**后端补充（CollectorController 缺少详情接口）：**
+- CollectorController 新增 `GET /api/collector/order/{id}` 订单详情接口
+- CollectorOrderService 新增 `getOrderDetail()` 方法：待接单(status=0)订单所有回收员可查看，其他状态仅接单本人可查看
+
+**前端修改（3 个文件）：**
+
+1. **index.vue（回收员首页）：**
+   - 回收员区块展示待接单列表（调用 `GET /api/collector/order/pending`）
+   - 待接单卡片：订单号、状态标签、上门地址、预约时间、衣物分类、预估重量
+   - 接单按钮（二次确认弹窗）→ `POST /api/collector/order/{id}/accept`
+   - 点击卡片跳转订单详情页
+   - `onShow` 每次显示时刷新待接单列表
+
+2. **order/list/list.vue（订单列表页，用户+回收员共用）：**
+   - 引入 `useUserStore`，通过 `isUser`/`isCollector` 计算属性判断角色
+   - 用户 Tab：全部/待接单/进行中/待确认/已完成/已取消
+   - 回收员 Tab：全部/已接单/上门中/待确认/已完成
+   - `loadOrders()` 根据角色分发到 `loadUserOrders()` 或 `loadCollectorOrders()`
+   - 回收员操作按钮：开始上门（status=1，蓝色）、完成称重（status=2，绿色，弹出输入框填写重量）
+   - TabBar current 根据角色动态切换（回收员=1，用户=2）
+
+3. **order/detail/detail.vue（订单详情页，用户+回收员共用）：**
+   - 根据角色调用不同 API：回收员 `/api/collector/order/{id}`，用户 `/api/user/order/{id}`
+   - 回收员专属状态描述文字（如"您已接单，请尽快出发上门"）
+   - 回收员操作按钮：接单（status=0）、开始上门（status=1，蓝色）、完成称重（status=2，绿色，弹出输入框）
+   - 用户操作保持不变：取消订单（status 0/1）、确认完成（status 3）
+
+**新增/修改文件：**
+| 文件 | 操作 |
+|---|---|
+| `CollectorController.java` | 新增 `GET /api/collector/order/{id}` |
+| `CollectorOrderService.java` | 新增 `getOrderDetail()` 方法 |
+| `index.vue` | 回收员首页待接单列表 |
+| `order/list/list.vue` | 用户+回收员共用订单列表 |
+| `order/detail/detail.vue` | 用户+回收员共用订单详情 |
+
+**验证结果：**
+- 后端编译通过 ✅
+- 前端编译通过 ✅
+- 端到端全流程（用户下单→回收员接单→上门→称重→用户确认）✅
+
+### 第 2 周全部完成，下一步：第 3 周 — 积分规则 + 机构端 + 管理后台

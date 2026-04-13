@@ -31,9 +31,6 @@ public class User {
     /** 角色：USER-普通用户 / COLLECTOR-回收员 / INSTITUTION-机构 */
     private String role;
 
-    /** 所属社区ID */
-    private Long communityId;
-
     /** 积分余额 */
     private Integer pointsBalance;
 

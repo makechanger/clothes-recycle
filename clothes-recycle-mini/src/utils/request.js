@@ -4,20 +4,17 @@
  */
 
 // 后端 API 基础地址
-// 本地开发（微信开发者工具模拟器）用 localhost，真机调试/上线用局域网 IP 或服务器地址
-const ENV_CONFIG = {
-  // 本地开发环境（模拟器）
-  development: 'http://localhost:8080',
-  // 真机调试 / 体验版（改成你电脑的局域网 IP）
-  trial: 'http://192.168.46.61:8080',
-  // 正式上线环境（部署后改成服务器域名）
-  production: 'http://192.168.46.61:8080'
-}
+// 局域网 IP 地址（真机调试时使用，换网络后需更新）
+const LAN_IP = '192.168.134.61'
 
-// 自动获取当前运行环境，选择对应的 API 地址
-const { miniProgram } = uni.getAccountInfoSync()
-const envVersion = miniProgram?.envVersion || 'development'
-const BASE_URL = ENV_CONFIG[envVersion] || ENV_CONFIG.development
+// 判断是否为真机调试（真机调试时 window 宽度较小且非 devtools 环境）
+const systemInfo = uni.getSystemInfoSync()
+const isRealDevice = systemInfo.platform !== 'devtools'
+
+// 模拟器用 localhost，真机用局域网 IP
+const BASE_URL = isRealDevice
+  ? `http://${LAN_IP}:8080`
+  : 'http://localhost:8080'
 
 /**
  * 发起请求

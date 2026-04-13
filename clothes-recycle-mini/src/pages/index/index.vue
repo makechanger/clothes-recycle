@@ -45,11 +45,56 @@
       </view>
     </view>
 
-    <!-- 回收员端首页：待接单列表（后续开发） -->
+    <!-- 回收员端首页：待接单列表 -->
     <view v-else-if="userStore.isCollector" class="home-content">
       <view class="welcome">
         <text class="welcome-text">回收员工作台</text>
-        <text class="welcome-sub">待接单列表将在后续步骤开发</text>
+        <text class="welcome-sub">以下是当前待接单的订单</text>
+      </view>
+
+      <!-- 待接单列表 -->
+      <view v-if="pendingOrders.length > 0" class="pending-list">
+        <view
+          v-for="order in pendingOrders"
+          :key="order.id"
+          class="pending-card"
+          @click="goOrderDetail(order.id)"
+        >
+          <!-- 订单头部：订单号 + 状态 -->
+          <view class="pending-header">
+            <text class="pending-no">{{ order.orderNo }}</text>
+            <text class="pending-status">待接单</text>
+          </view>
+          <!-- 地址信息 -->
+          <view class="pending-row">
+            <text class="pending-label">上门地址</text>
+            <text class="pending-value">{{ parseAddress(order.addressSnapshot) }}</text>
+          </view>
+          <!-- 预约时间 -->
+          <view class="pending-row">
+            <text class="pending-label">预约时间</text>
+            <text class="pending-value">{{ order.appointmentDate }} {{ order.timeSlotStart }}-{{ order.timeSlotEnd }}</text>
+          </view>
+          <!-- 衣物分类 -->
+          <view class="pending-row">
+            <text class="pending-label">衣物分类</text>
+            <text class="pending-value">{{ parseCategories(order.clothesCategories) }}</text>
+          </view>
+          <!-- 预估重量 -->
+          <view class="pending-row">
+            <text class="pending-label">预估重量</text>
+            <text class="pending-value">{{ order.estimatedWeight }}kg</text>
+          </view>
+          <!-- 接单按钮 -->
+          <view class="pending-actions" @click.stop="">
+            <button class="accept-btn" size="mini" @click.stop="handleAccept(order)">接单</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view v-else class="empty">
+        <text class="empty-text">暂无待接单订单</text>
       </view>
     </view>
 
@@ -67,13 +112,106 @@
 </template>
 
 <script setup>
+/**
+ * 首页
+ * - 未登录：欢迎页 + 登录入口
+ * - 用户：快捷入口（预约回收、我的订单、地址管理、个人中心）
+ * - 回收员：待接单列表 + 接单操作
+ * - 机构：占位（后续开发）
+ */
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user.js'
+import request from '@/utils/request.js'
 
 const userStore = useUserStore()
+
+// ==================== 回收员待接单数据 ====================
+
+// 待接单订单列表
+const pendingOrders = ref([])
+
+// 页面每次显示时刷新数据（回收员角色）
+onShow(() => {
+  if (userStore.isCollector) {
+    loadPendingOrders()
+  }
+})
+
+/**
+ * 加载待接单订单列表
+ */
+async function loadPendingOrders() {
+  try {
+    const data = await request({ url: '/api/collector/order/pending', loading: false })
+    pendingOrders.value = data || []
+  } catch (e) {
+    console.error('加载待接单列表失败:', e)
+  }
+}
+
+// ==================== 工具方法 ====================
+
+/**
+ * 解析地址快照 JSON，返回简短地址文本
+ */
+function parseAddress(snapshot) {
+  if (!snapshot) return '未知地址'
+  try {
+    const addr = JSON.parse(snapshot)
+    return `${addr.district || ''} ${addr.detailAddress || ''}`
+  } catch {
+    return '未知地址'
+  }
+}
+
+/**
+ * 解析衣物分类 JSON
+ */
+function parseCategories(json) {
+  if (!json) return '未填写'
+  try {
+    return JSON.parse(json).join('、')
+  } catch {
+    return json
+  }
+}
+
+// ==================== 操作方法 ====================
 
 // 页面跳转
 function goTo(url) {
   uni.navigateTo({ url })
+}
+
+// 跳转订单详情
+function goOrderDetail(id) {
+  uni.navigateTo({ url: `/pages/order/detail/detail?id=${id}` })
+}
+
+/**
+ * 接单操作（二次确认）
+ */
+function handleAccept(order) {
+  uni.showModal({
+    title: '确认接单',
+    content: `确定接受该订单吗？\n预约时间：${order.appointmentDate} ${order.timeSlotStart}-${order.timeSlotEnd}`,
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await request({
+            url: `/api/collector/order/${order.id}/accept`,
+            method: 'POST'
+          })
+          uni.showToast({ title: '接单成功', icon: 'success' })
+          // 刷新待接单列表
+          loadPendingOrders()
+        } catch (e) {
+          console.error('接单失败:', e)
+        }
+      }
+    }
+  })
 }
 </script>
 
@@ -154,5 +292,89 @@ function goTo(url) {
 .action-text {
   font-size: 28rpx;
   color: #333;
+}
+
+/* ==================== 回收员待接单列表样式 ==================== */
+
+/* 待接单卡片 */
+.pending-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 卡片头部 */
+.pending-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.pending-no {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.pending-status {
+  font-size: 24rpx;
+  color: #ff9800;
+  background: #fff3e0;
+  padding: 4rpx 16rpx;
+  border-radius: 6rpx;
+}
+
+/* 信息行 */
+.pending-row {
+  display: flex;
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.pending-label {
+  width: 140rpx;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.pending-value {
+  flex: 1;
+  color: #333;
+}
+
+/* 接单按钮区域 */
+.pending-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.accept-btn {
+  background: #07c160 !important;
+  color: #fff !important;
+  border: none !important;
+  font-size: 26rpx;
+  padding: 0 40rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  border-radius: 30rpx;
+}
+
+/* 空状态 */
+.empty {
+  text-align: center;
+  padding: 100rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
 </style>

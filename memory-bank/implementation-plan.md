@@ -2,7 +2,7 @@
 
 > 4 周 / 28 天 | 每步小而具体 | 每步包含验证方式 | 不包含代码
 > 
-> **最后更新：2026-04-03**
+> **最后更新：2026-04-04**
 > 
 > **本次更新已融入以下设计决策：**
 > 1. 仅使用微信小程序测试号，登录采用**手机号+密码**方式（放弃微信 openid 登录）。
@@ -39,9 +39,9 @@
 
 #### Step 1.2 🔴 数据库创建与核心建表（3h）— ✅ 已完成
 - 安装 MySQL 8.0，创建数据库 `clothes_recycle`（字符集 utf8mb4）。
-- 本周只建以下表：`user`（用户表）、`user_address`（用户地址表）、`recycle_order`（回收订单表）、`order_status_log`（订单状态流转记录表）、`community`（社区表）、`admin`（管理员表）。
+- 本周只建以下表：`user`（用户表）、`user_address`（用户地址表）、`recycle_order`（回收订单表）、`order_status_log`（订单状态流转记录表）、`admin`（管理员表）。
 - 为每张表添加主键自增、`created_at` 默认值、常用字段索引。
-- 在 `community` 表中插入 3-5 条测试社区数据；在 `admin` 中插入一条默认管理员。
+- 在 `admin` 中插入一条默认管理员。
 - **验证**：用数据库工具连接，确认所有表存在、字段类型正确。
 
 #### Step 1.3 🔴 后端基础架构搭建（2h）— ✅ 已完成
@@ -92,12 +92,13 @@
 
 ### Day 8-9：地址管理 + 订单基础
 
-#### Step 2.1 ✅ 后端 - 社区列表 + 地址 CRUD 接口（3h）— 2026-04-04 完成
-- Community 实体 + Mapper，GET /api/common/community/list
+#### Step 2.1 ✅ 后端 - 地址 CRUD 接口（3h）— 2026-04-04 完成
+- ~~Community 实体 + Mapper，GET /api/common/community/list~~（已移除，见下方说明）
 - UserAddress 实体 + Mapper + Service，地址增删改查 + 设默认
 - 接口挂在 UserController 下：/api/user/address/**
 - 地址归属校验：只能操作自己的地址（StpUtil.getLoginIdAsLong()）
-- **验证**：Knife4j 调用社区列表返回 5 条数据；地址 CRUD 全流程 + 越权拦截
+- **验证**：地址 CRUD 全流程 + 越权拦截
+- **变更记录**：移除社区表（community）及 User.communityId 字段。用户地址已有省/市/区字段，社区表无实际业务价值。
 
 #### Step 2.2 ✅ 小程序 - 地址管理页面（2h）— 2026-04-04 完成
 - 依赖: Step 2.1
@@ -105,16 +106,16 @@
 - 省市区选择器使用 `<picker mode=”region”>`
 - **验证**：新增→列表→编辑→删除→设默认 全流程
 
-#### Step 2.3 🔴 后端 - 订单实体 + 状态日志基础设施（1.5h）
+#### Step 2.3 ✅ 后端 - 订单实体 + 状态日志基础设施（1.5h）— 2026-04-04 完成
 - RecycleOrder / OrderStatusLog 实体 + Mapper
 - OrderStatusLogService（每次状态变更记录日志）
 - **验证**：编译通过
 
-#### Step 2.4 🔴 后端 - 文件上传接口（1h）
+#### Step 2.4 ✅ 后端 - 文件上传接口（1h）— 2026-04-04 完成
 - CommonController: POST /api/common/upload，保存到 ./uploads/，**限制文件大小不得超过 5MB**
 - **验证**：Knife4j 上传图片，确认可通过 /uploads/xxx.jpg 访问；传入大于 5MB 的文件被拦截
 
-#### Step 2.5 🔴 后端 - 用户订单接口（创建 + 查看 + 取消 + 确认）（3h）
+#### Step 2.5 ✅ 后端 - 用户订单接口（创建 + 查看 + 取消 + 确认）（3h）— 2026-04-04 完成
 - 依赖: Step 2.3, 2.4
 - RecycleOrderService + CreateOrderRequest DTO
 - POST /api/user/order/create, GET /api/user/order/list, GET /api/user/order/{id}
@@ -125,35 +126,39 @@
 - 确认完成：status 3→4，发放积分（actualWeight × 10）
 - **验证**：创建订单→查看列表→查看详情→取消/确认
 
-#### Step 2.6 🔴 后端 - 回收员订单接口（2h）
+#### Step 2.6 ✅ 后端 - 回收员订单接口（2h）— 2026-04-04 完成
 - 依赖: Step 2.3
-- CollectorController 添加：pending / list / accept / pickup / complete
-- 角色校验：user.role == COLLECTOR
-- 接单防并发：UPDATE WHERE status=0
+- CollectorController：pending / list / accept / pickup / complete
+- CollectorOrderService：角色校验、接单防并发、状态流转
+- CompleteWeighingRequest DTO
+- 数据库补充 accepted_at 列
 - **验证**：回收员接单→上门→称重→用户确认→全流程
 
 ### Day 9-12：前端开发
 
-#### Step 2.7 🔴 小程序 - 预约回收页面（创建订单）（4h）
+#### Step 2.7 ✅ 小程序 - 预约回收页面（创建订单）（4h）— 2026-04-04 完成
 - 依赖: Step 2.2, 2.5
-- 填充 order/create/create.vue 骨架
-- 地址选择 + 日期 + 时间段 + 衣物分类 + 预估重量 + 照片上传 + 备注
-- **核心改动**：调用 `uni.chooseImage` 获取照片后，**在前端使用 canvas 进行压缩，确保单张图片大小 ≤1MB** 再调用上传接口
-- **验证**：完整下单流程
+- 填充 order/create/create.vue
+- 地址选择（uni.$once 事件通道） + 日期 + 时间段多列选择器 + 衣物分类多选标签 + 预估重量 + 照片上传（canvas 压缩） + 备注
+- address/list/list.vue 增加选择模式（mode=select）
+- **验证**：完整下单流程 ✅
 
-#### Step 2.8 🔴 小程序 - 订单列表 + 详情页（3h）
+#### Step 2.8 ✅ 小程序 - 订单列表 + 详情页（3h）— 2026-04-04 完成
 - 依赖: Step 2.5
-- 填充 order/list/list.vue 和 order/detail/detail.vue 骨架
-- 状态 Tab 筛选（全部/待接单/进行中/已完成/已取消） + 状态色彩 + 操作按钮（取消/确认）
-- **验证**：列表查看 + 详情查看 + 取消/确认操作
+- 填充 order/list/list.vue：状态 Tab 筛选（全部/待接单/进行中/待确认/已完成/已取消）、订单卡片、操作按钮
+- 填充 order/detail/detail.vue：状态横幅、地址解析、预约信息、照片预览、订单时间线、操作按钮
+- "进行中" Tab 合并状态 1+2（Promise.all 并行请求）
+- **验证**：列表查看 + 详情查看 + 取消/确认操作 ✅
 
-#### Step 2.9 🔴 小程序 - 回收员前端（3h）
+#### Step 2.9 ✅ 小程序 - 回收员前端（3h）— 2026-04-10 完成
 - 依赖: Step 2.6
-- index.vue 回收员区块：展示待接单列表 + 接单按钮
-- order/list 和 order/detail 支持回收员视角（开始上门/完成称重）
-- **验证**：端到端全流程（用户下单→回收员接单→上门→称重→用户确认）
+- 后端补充：CollectorController 新增 GET /api/collector/order/{id} 详情接口，CollectorOrderService 新增 getOrderDetail() 方法（待接单订单所有回收员可查看，其他状态仅接单本人可查看）
+- index.vue 回收员区块：展示待接单列表 + 接单按钮（调用 GET /api/collector/order/pending）
+- order/list/list.vue 根据角色切换 API：回收员调用 GET /api/collector/order/list，Tab 改为（全部/已接单/上门中/待确认/已完成），回收员操作按钮（开始上门/完成称重），TabBar current 根据角色动态切换
+- order/detail/detail.vue 回收员视角：根据角色调用不同 API，回收员专属状态描述文字，操作按钮（接单/开始上门/完成称重，称重需输入实际重量）
+- **验证**：端到端全流程（用户下单→回收员接单→上门→称重→用户确认）✅
 
-#### Step 2.10 🔴 更新进度文档
+#### Step 2.10 ✅ 更新进度文档 — 2026-04-10 完成
 
 ---
 

@@ -7,7 +7,7 @@
         v-for="item in addressList"
         :key="item.id"
         class="address-card"
-        @click="handleEdit(item.id)"
+        @click="isSelectMode ? handleSelect(item) : handleEdit(item.id)"
       >
         <!-- 联系人信息 -->
         <view class="address-top">
@@ -50,15 +50,28 @@
  * - 展示当前用户的所有地址，默认地址排在最前
  * - 支持新增、编辑、删除、设为默认操作
  * - 每次页面显示时重新加载列表（从编辑页返回后刷新）
+ * - 支持选择模式（mode=select）：点击地址后通过事件通道传回选中地址并返回
  */
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
 
 // 地址列表数据
 const addressList = ref([])
 
-// 页面每次显示时加载地址列表（包括从编辑页返回）
+// 是否为选择模式（从预约回收页跳转过来选地址）
+const isSelectMode = ref(false)
+
+// 页面加载时判断是否为选择模式
+onLoad((options) => {
+  if (options.mode === 'select') {
+    isSelectMode.value = true
+    // 选择模式下修改标题
+    uni.setNavigationBarTitle({ title: '选择地址' })
+  }
+})
+
+// 页面每次显示时加载地址列表（包括从编辑页返回后刷新）
 onShow(() => {
   loadAddressList()
 })
@@ -80,6 +93,15 @@ async function loadAddressList() {
  */
 function handleAdd() {
   uni.navigateTo({ url: '/pages/address/edit/edit' })
+}
+
+/**
+ * 选择地址（选择模式下）
+ * 通过事件通道将选中的地址传回预约回收页，然后返回
+ */
+function handleSelect(address) {
+  uni.$emit('selectAddress', address)
+  uni.navigateBack()
 }
 
 /**
