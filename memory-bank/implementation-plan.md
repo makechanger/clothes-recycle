@@ -101,6 +101,7 @@
 - **变更记录**：移除社区表（community）及 User.communityId 字段。用户地址已有省/市/区字段，社区表无实际业务价值。
 
 #### Step 2.2 ✅ 小程序 - 地址管理页面（2h）— 2026-04-04 完成
+#### Step 2.2 ✅ 小程序 - 地址管理页面（2h）— 2026-04-04 完成
 - 依赖: Step 2.1
 - 填充 address/list/list.vue 和 address/edit/edit.vue 骨架
 - 省市区选择器使用 `<picker mode=”region”>`

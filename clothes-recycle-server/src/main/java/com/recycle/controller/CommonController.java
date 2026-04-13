@@ -67,7 +67,7 @@ public class CommonController {
 
         // 保存文件到本地磁盘
         File destFile = new File(uploadDir, newFilename);
-        file.transferTo(destFile.getAbsoluteFile());
+        file.transferTo(destFile.toPath());
 
         // 返回可通过 HTTP 访问的相对路径
         String url = "/uploads/" + newFilename;
