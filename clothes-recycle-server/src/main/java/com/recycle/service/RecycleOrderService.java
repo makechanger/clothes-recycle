@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recycle.common.BusinessException;
 import com.recycle.dto.CreateOrderRequest;
 import com.recycle.entity.RecycleOrder;
-import com.recycle.entity.User;
 import com.recycle.entity.UserAddress;
 import com.recycle.mapper.RecycleOrderMapper;
 import com.recycle.mapper.UserAddressMapper;
-import com.recycle.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +33,6 @@ public class RecycleOrderService {
 
     private final RecycleOrderMapper recycleOrderMapper;
     private final UserAddressMapper userAddressMapper;
-    private final UserMapper userMapper;
     private final OrderStatusLogService orderStatusLogService;
     private final ObjectMapper objectMapper;
 
@@ -173,7 +170,7 @@ public class RecycleOrderService {
     /**
      * 用户确认完成订单
      * 仅 status=3（待确认/称重完成）可确认
-     * 确认后发放积分：actualWeight × 10
+     * 确认后等待机构扫码接收，届时再发放积分
      *
      * @param orderId 订单ID
      * @param userId  当前用户ID
@@ -187,30 +184,15 @@ public class RecycleOrderService {
             throw new BusinessException(400, "当前订单状态不可确认");
         }
 
-        // 计算积分：实际重量 × 10（向下取整）
-        int points = 0;
-        if (order.getActualWeight() != null) {
-            points = order.getActualWeight().multiply(new java.math.BigDecimal("10")).intValue();
-        }
-
-        // 更新订单状态为已完成，记录积分
+        // 更新订单状态为已完成（用户确认），等待机构扫码接收后再发放积分
         LambdaUpdateWrapper<RecycleOrder> wrapper = new LambdaUpdateWrapper<RecycleOrder>()
                 .eq(RecycleOrder::getId, orderId)
                 .set(RecycleOrder::getStatus, 4)
-                .set(RecycleOrder::getPointsAwarded, points)
                 .set(RecycleOrder::getCompletedAt, java.time.LocalDateTime.now());
         recycleOrderMapper.update(null, wrapper);
 
-        // 给用户发放积分
-        if (points > 0) {
-            User user = userMapper.selectById(userId);
-            user.setPointsBalance(user.getPointsBalance() + points);
-            userMapper.updateById(user);
-            log.info("用户 {} 获得 {} 积分", userId, points);
-        }
-
         // 记录状态日志
-        orderStatusLogService.log(orderId, 3, 4, userId, "user", "用户确认完成，发放积分" + points);
+        orderStatusLogService.log(orderId, 3, 4, userId, "user", "用户确认完成，等待机构接收");
 
         log.info("用户 {} 确认订单 {} 完成", userId, order.getOrderNo());
     }

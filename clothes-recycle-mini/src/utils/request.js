@@ -4,8 +4,7 @@
  */
 
 // 后端 API 基础地址
-// 局域网 IP 地址（真机调试时使用，换网络后需更新）
-const LAN_IP = '192.168.134.61'
+ const LAN_IP = '192.168.31.201'
 
 // 判断是否为真机调试（真机调试时 window 宽度较小且非 devtools 环境）
 const systemInfo = uni.getSystemInfoSync()
@@ -27,6 +26,7 @@ const BASE_URL = isRealDevice
  */
 const request = (options) => {
   const { url, method = 'GET', data = {}, loading = true } = options
+  // console.log('【实际请求地址】', BASE_URL + url)
 
   // 显示加载提示
   if (loading) {

@@ -115,6 +115,7 @@
 import { ref, reactive } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { uploadFile } from '@/utils/request.js'
 
 // 申请角色：COLLECTOR 或 INSTITUTION
 const applyRole = ref('COLLECTOR')
@@ -157,18 +158,21 @@ async function loadApplications() {
 }
 
 /**
- * 选择图片并上传
- * 目前使用本地临时路径作为占位，后续接入文件上传接口后替换
+ * 选择图片并上传到服务器
  */
 function chooseImage(field) {
   uni.chooseImage({
     count: 1,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: (res) => {
-      // 暂时使用本地临时路径，后续对接文件上传接口
-      form[field] = res.tempFilePaths[0]
-      uni.showToast({ title: '图片已选择', icon: 'success' })
+    success: async (res) => {
+      try {
+        const url = await uploadFile(res.tempFilePaths[0])
+        form[field] = url
+        uni.showToast({ title: '上传成功', icon: 'success' })
+      } catch (e) {
+        console.error('上传图片失败:', e)
+      }
     }
   })
 }

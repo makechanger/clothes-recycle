@@ -104,8 +104,8 @@
       <text class="empty-text">暂无订单</text>
     </view>
 
-    <!-- 底部导航栏：用户角色"我的订单"索引2，回收员"我的任务"索引1 -->
-    <custom-tabbar :current="isCollector ? 1 : 2" />
+    <!-- 底部导航栏：机构"接收任务"索引0，回收员"我的任务"索引1，用户"我的订单"索引2 -->
+    <custom-tabbar :current="isInstitution ? 0 : (isCollector ? 1 : 2)" />
   </view>
 </template>
 
@@ -126,6 +126,7 @@ const userStore = useUserStore()
 // 角色判断
 const isUser = computed(() => userStore.isUser)
 const isCollector = computed(() => userStore.isCollector)
+const isInstitution = computed(() => userStore.isInstitution)
 
 // ==================== 状态配置 ====================
 
@@ -148,8 +149,18 @@ const collectorTabs = [
   { label: '已完成', value: 4 }
 ]
 
+// 机构端 Tab 配置
+const institutionTabs = [
+  { label: '全部', value: null },
+  { label: '已接收', value: 7 }
+]
+
 // 根据角色返回对应 Tab 配置
-const currentTabs = computed(() => isCollector.value ? collectorTabs : userTabs)
+const currentTabs = computed(() => {
+  if (isInstitution.value) return institutionTabs
+  if (isCollector.value) return collectorTabs
+  return userTabs
+})
 
 // 状态文字映射
 const statusMap = {
@@ -159,7 +170,8 @@ const statusMap = {
   3: '待确认',
   4: '已完成',
   5: '已取消',
-  6: '异常'
+  6: '异常',
+  7: '机构已接收'
 }
 
 // 当前选中的 Tab
@@ -181,7 +193,9 @@ onShow(() => {
  */
 async function loadOrders() {
   try {
-    if (isCollector.value) {
+    if (isInstitution.value) {
+      await loadInstitutionOrders()
+    } else if (isCollector.value) {
       await loadCollectorOrders()
     } else {
       await loadUserOrders()
@@ -219,6 +233,18 @@ async function loadUserOrders() {
  */
 async function loadCollectorOrders() {
   let url = '/api/collector/order/list'
+  if (currentTab.value !== null) {
+    url += `?status=${currentTab.value}`
+  }
+  const data = await request({ url, loading: false })
+  orderList.value = data || []
+}
+
+/**
+ * 加载机构已接收订单
+ */
+async function loadInstitutionOrders() {
+  let url = '/api/institution/order/list'
   if (currentTab.value !== null) {
     url += `?status=${currentTab.value}`
   }
@@ -265,6 +291,8 @@ function parseCategories(json) {
  * 判断订单是否显示操作按钮
  */
 function showActions(order) {
+  // 机构端：无操作按钮
+  if (isInstitution.value) return false
   if (isCollector.value) {
     // 回收员：已接单(1)可开始上门，上门中(2)可完成称重
     return order.status === 1 || order.status === 2
@@ -276,9 +304,10 @@ function showActions(order) {
 // ==================== 用户操作 ====================
 
 /**
- * 跳转订单详情页
+ * 跳转订单详情页（机构端不跳转，因为没有机构订单详情接口）
  */
 function goDetail(id) {
+  if (isInstitution.value) return
   uni.navigateTo({ url: `/pages/order/detail/detail?id=${id}` })
 }
 
@@ -308,13 +337,13 @@ function handleCancel(order) {
 
 /**
  * 用户确认完成订单
+ * 确认后等待机构扫码接收，届时发放积分
  */
 function handleConfirm(order) {
   const weight = order.actualWeight || 0
-  const points = Math.floor(weight * 10)
   uni.showModal({
     title: '确认完成',
-    content: `实际重量 ${weight}kg，确认后将获得 ${points} 积分`,
+    content: `实际重量 ${weight}kg，确认后等待机构接收发放积分`,
     success: async (res) => {
       if (res.confirm) {
         try {
@@ -322,7 +351,7 @@ function handleConfirm(order) {
             url: `/api/user/order/${order.id}/confirm`,
             method: 'POST'
           })
-          uni.showToast({ title: '确认成功，积分已发放', icon: 'success' })
+          uni.showToast({ title: '确认成功', icon: 'success' })
           loadOrders()
         } catch (e) {
           console.error('确认订单失败:', e)
@@ -365,9 +394,9 @@ function handleComplete(order) {
   // 弹出输入框让回收员填写实际重量
   uni.showModal({
     title: '完成称重',
-    content: '请输入实际称重重量(kg)',
+    content: '',
     editable: true,
-    placeholderText: '例如: 5.5',
+    placeholderText: '请输入实际称重重量(kg)',
     success: async (res) => {
       if (res.confirm) {
         const input = res.content && res.content.trim()
@@ -480,6 +509,7 @@ function handleComplete(order) {
 .status-4 { color: #4caf50; background: #e8f5e9; }
 .status-5 { color: #9e9e9e; background: #f5f5f5; }
 .status-6 { color: #f44336; background: #ffebee; }
+.status-7 { color: #1565c0; background: #e3f2fd; }
 
 /* 订单信息 */
 .info-row {

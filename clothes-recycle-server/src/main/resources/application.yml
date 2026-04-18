@@ -54,4 +54,4 @@ file:
 # ===== 日志级别 =====
 logging:
   level:
-    com.recycle: debug
+    "[com.recycle]": debug

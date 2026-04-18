@@ -124,6 +124,20 @@ public class RoleApplicationService {
     }
 
     /**
+     * 查询所有已处理的申请记录（管理员审批历史）
+     * 包含已通过（status=1）和已拒绝（status=2）的记录
+     *
+     * @return 已处理申请列表，按处理时间倒序
+     */
+    public List<RoleApplication> getProcessedApplications() {
+        return roleApplicationMapper.selectList(
+                new LambdaQueryWrapper<RoleApplication>()
+                        .in(RoleApplication::getStatus, 1, 2)
+                        .orderByDesc(RoleApplication::getUpdatedAt)
+        );
+    }
+
+    /**
      * 管理员审批通过
      * 核心逻辑（重构后）：
      * 1. 更新 user 表的 role 字段为对应角色

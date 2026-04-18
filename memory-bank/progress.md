@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：第 2 周核心业务开发中 — Step 2.1~2.2 ✅ 已完成
+## 当前状态：第 3 周管理后台开发完成 — Step 3.1~3.7+ ✅ 全部完成
 
 ---
 
@@ -316,3 +316,144 @@
 
 **验证结果：**
 - 用户测试通过 ✅
+
+---
+
+### Step 3.1 🔴 数据库 - 补建积分与机构相关表（1.5h）— ✅ 2026-04-13 完成
+
+**完成内容：**
+- 创建 `points_transaction` 表（积分流水）
+- 创建 `points_rule` 表（积分规则，按衣物分类配置积分/kg）
+- 插入默认积分规则数据
+
+**SQL 脚本位置：** `src/main/resources/sql/step3_1_points.sql`
+
+---
+
+### Step 3.2 🔴 后端 - 机构扫码接收与积分策略升级（3h）— ✅ 2026-04-13 完成
+
+**完成内容：**
+- `InstitutionController`：`POST /api/institution/order/receive`（扫码接收）、`GET /api/institution/order/list`（已接收订单列表）
+- `InstitutionOrderService`：`scanReceive()` 乐观更新 WHERE status=4，计算积分，更新状态为7
+- `PointsService`：积分发放服务，根据 `points_rule` 按分类计算积分
+- `PointsRuleService`：积分规则查询
+- `CollectorOrderService.completeWeighing()`：称重完成后生成溯源二维码（QRCodeUtil）
+- `RecycleOrderService.confirmOrder()`：用户确认不再发放积分，改为等待机构接收
+- `ScanReceiveRequest` DTO
+- `PointsRule`、`PointsTransaction` 实体类
+- `PointsRuleMapper`、`PointsTransactionMapper`
+
+**新增文件：**
+- `dto/ScanReceiveRequest.java`
+- `entity/PointsRule.java`、`entity/PointsTransaction.java`
+- `mapper/PointsRuleMapper.java`、`mapper/PointsTransactionMapper.java`
+- `service/InstitutionOrderService.java`
+- `service/PointsService.java`、`service/PointsRuleService.java`
+- `util/QRCodeUtil.java`
+
+---
+
+### Step 3.3 🔴 小程序 - 机构端页面（3h）— ✅ 2026-04-17 完成
+
+**完成内容：**
+- `pages/index/index.vue`：机构首页 — 扫码接收按钮（`uni.scanCode`）+ 最近接收订单列表（最多5条）
+- `pages/order/list/list.vue`：机构订单列表 — 机构Tab筛选（全部/已接收）、机构API、状态7样式、用户确认文案更新
+- `pages/order/detail/detail.vue`：订单详情 — 状态7横幅、机构视角状态描述、用户确认文案更新
+
+**关键改动：**
+- 三个页面均添加 `isInstitution` 角色判断
+- `statusMap` 增加 `7: '机构已接收'`
+- 用户确认订单文案从"确认后获得积分"改为"确认后等待机构接收发放积分"
+- 机构订单列表卡片不跳转详情页（后端无机构详情API）
+- 底部 TabBar `current` 值适配机构角色
+
+**验证结果：**
+- 真机调试测试通过 ✅
+
+---
+
+### Step 3.4 🔴 管理后台项目初始化与登录（3h）— ✅ 2026-04-17 完成
+
+**完成内容：**
+- 从零搭建 `clothes-recycle-admin/` 项目（Vue 3 + Vite 5 + Element Plus + Pinia + Axios + Vue Router）
+- Vite 开发代理 `/api` → `localhost:8080`，端口 3000
+- Axios 封装：token 自动注入 `Authorization` header、401 拦截跳登录页、`Result<T>` 解包
+- Pinia 管理员状态：login/logout + localStorage 持久化
+- Vue Router 导航守卫：未登录拦截到 /login，已登录 /login 重定向 /dashboard
+- 登录页：Element Plus 表单（用户名+密码），居中卡片布局，渐变背景
+- 后台骨架：侧边栏菜单（仪表盘/订单管理/回收员管理/积分规则/用户管理）+ 顶栏（用户名+退出）+ 内容区
+- 仪表盘占位页
+
+**新建文件（10个）：**
+- `clothes-recycle-admin/package.json`、`vite.config.js`、`index.html`
+- `src/main.js`、`src/App.vue`
+- `src/utils/request.js`、`src/store/admin.js`、`src/router/index.js`
+- `src/views/login/LoginView.vue`、`src/views/layout/AdminLayout.vue`、`src/views/layout/DashboardView.vue`
+
+**验证结果：**
+- Vite 开发服务器启动成功（localhost:3000）✅
+- 用户测试通过 ✅
+
+---
+
+### Step 3.5 🔴 管理后台 - 回收员账号创建与资质审核（3h）— ✅ 2026-04-17 完成
+
+**完成内容：**
+- `CollectorView.vue`：回收员管理页面（回收员列表 Tab + 待审核申请 Tab）
+- 回收员列表：展示手机号、姓名、资质状态、身份证照片
+- 创建回收员弹窗：手机号+密码+姓名表单
+- 待审核申请列表：审批通过/拒绝操作
+- `api/collector.js`：回收员管理 API 模块
+
+**验证结果：**
+- 用户测试通过 ✅
+
+---
+
+### Step 3.6 🔴 管理后台 - 订单管理与积分规则（4h）— ✅ 2026-04-17 完成
+
+**完成内容：**
+- `MyBatisPlusConfig.java`：注册分页插件（PaginationInnerInterceptor）
+- `AdminOrderService.java`：管理员订单分页查询 + 详情（含状态流转日志）
+- `AdminController.java`：新增 4 个端点（GET /orders, GET /orders/{id}, GET /points-rules, PUT /points-rules/{id}）
+- `api/order.js`：订单管理 API 模块
+- `api/pointsRule.js`：积分规则 API 模块
+- `OrderView.vue`：订单管理页面（筛选+分页表格+详情弹窗+状态时间线+地址JSON解析）
+- `PointsRuleView.vue`：积分规则页面（规则表格+编辑弹窗，支持修改积分/kg、最低重量、启用/禁用）
+- `router/index.js`：添加 /orders 和 /points-rules 路由
+- `AdminLayout.vue`：启用"订单管理"和"积分规则"菜单项
+
+**验证结果：**
+- 用户测试通过 ✅
+
+---
+
+### Step 3.7+ 🔴 管理后台 - 用户管理页面（3h）— ✅ 2026-04-18 完成
+
+**完成内容：**
+- `AdminUserService.java`：用户管理服务（分页列表、启用/禁用、重置密码、修改角色）
+- `AdminController.java`：新增 4 个用户管理端点（GET /users, PUT /users/{id}/status, POST /users/{id}/reset-password, PUT /users/{id}/role）
+- `api/user.js`：用户管理 API 模块
+- `UserView.vue`：用户管理页面（筛选+分页表格+启用禁用+重置密码+修改角色弹窗）
+- `router/index.js`：添加 /users 路由
+- `AdminLayout.vue`：启用"用户管理"菜单项（移除 disabled）
+
+**验证结果：**
+- 用户测试通过 ✅
+
+---
+
+### Bug 修复记录（2026-04-17 ~ 2026-04-18）
+
+**1. 身份证照片上传修复：**
+- 问题：小程序资质申请页 `chooseImage()` 直接存储本地临时路径到数据库，管理后台无法显示
+- 修复：`apply-role.vue` 的 `chooseImage()` 改为先调用 `uploadFile()` 上传到服务器，再存储返回的 `/uploads/xxx.jpg` URL
+- 影响：已有的旧申请记录中的临时路径无法恢复，需用户重新提交
+
+**2. 管理后台登录过期不跳转修复：**
+- 问题：后端 `GlobalExceptionHandler` 对 `NotLoginException` 返回 HTTP 200 + `{ code: 401 }`，但管理后台 `request.js` 只在 HTTP error 拦截器中处理 401 状态码
+- 修复：在 `request.js` 响应成功拦截器中增加 `res.code === 401` 判断，清除 localStorage 并跳转 `/login`
+
+**3. 后端启动冲突修复：**
+- 问题：`AdminController.java` 从 `controller/` 移动到 `controller/admin/` 后，旧 `.class` 文件残留导致 `ConflictingBeanDefinitionException`
+- 修复：执行 `mvn clean compile` 清除 `target/` 目录中的旧编译产物

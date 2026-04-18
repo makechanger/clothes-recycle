@@ -1,4 +1,4 @@
-package com.recycle.controller;
+package com.recycle.controller.user;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.recycle.common.Result;

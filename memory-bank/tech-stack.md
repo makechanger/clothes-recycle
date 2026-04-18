@@ -39,7 +39,7 @@
 | 状态 | Pinia | Vue 3 官方推荐，比 Vuex 简单 |
 | HTTP | Axios | 拦截器成熟，错误处理方便 |
 | 图表 | ECharts 5 (按需) | 数据看板用，P1 功能才需要 |
-| 后台模板 | **vue-pure-admin** | 基于 Element Plus，内置权限/布局/菜单，省 3-4 天搭框架时间 |
+| 后台模板 | **从零搭建** | — | 实际未使用模板，手动搭建骨架布局+路由守卫 |
 
 ### 为什么管理后台首选 Element Plus
 
@@ -48,14 +48,13 @@
 3. **生态最大**：GitHub 25k+ star，问题百度/CSDN 一搜一大把
 4. **模板丰富**：vue-pure-admin、vue-vben-admin 等成熟后台模板都基于 Element Plus
 
-### 推荐模板：vue-pure-admin
+### 实际方案：从零搭建
 
-4 周时间，从零搭管理后台（布局、侧边栏、面包屑、权限路由、登录页……）至少吃掉 3-4 天。直接用成熟模板，只写业务页面。
+从零搭建管理后台骨架（AdminLayout + 侧边栏菜单 + 顶栏 + Vue Router 导航守卫 + Pinia 状态管理）。原因是项目需求较简单，直接搭建更灵活，避免模板中大量无用代码。
 
-- 基于 Vue 3 + **Element Plus** + Vite + Pinia
-- 内置权限管理、动态路由、多标签页
-- 中文文档完善，GitHub 15k+ star
-- 删掉示例页面，只保留框架骨架即可
+- 基于 Vue 3 + **Element Plus** + Vite 5 + Pinia + Axios
+- 手动实现：登录页、后台骨架布局、路由守卫、token 管理
+- 开发端口：`http://localhost:3000`，Vite 代理 `/api` 和 `/uploads` 到后端 8080
 
 ---
 
@@ -222,7 +221,7 @@ zxing-core + zxing-javase        3.5.x
 | 小程序 UI | uView Plus | 3.x | UniApp 生态最成熟组件库 |
 | 小程序 IDE | HBuilderX | 最新 | UniApp 官方 IDE |
 | **管理后台 UI** | **Element Plus** | **最新** | **后台管理事实标准，组件最全** |
-| 管理后台模板 | vue-pure-admin | 最新 | 基于 Element Plus，省 3-4 天 |
+| 管理后台模板 |从零搭建骨架（侧边栏+顶栏+路由守卫） |
 | 管理后台构建 | Vite | 5.x | 秒级热更新 |
 | 后端框架 | Spring Boot | 3.2+ | 毕设标配，生态最全 |
 | ORM | MyBatis-Plus | 3.5+ | 单表零 SQL |
@@ -285,6 +284,17 @@ npm run dev:mp-weixin
 - 编译输出目录：`clothes-recycle-mini/dist/dev/mp-weixin`
 - 打开**微信开发者工具**，导入上述目录作为项目
 - 修改 `.vue` 文件保存后，Vite 自动编译，微信开发者工具自动刷新预览
+
+### 终端 3：管理后台（热重载）
+
+```bash
+cd clothes-recycle-admin
+npm run dev
+```
+
+- 默认端口 `3000`，访问地址：`http://localhost:3000`
+- Vite 代理：`/api` 和 `/uploads` 转发到 `http://localhost:8080`
+- 默认管理员账号：admin / admin123
 
 ### 仅编译（不启动服务）
 

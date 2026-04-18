@@ -7,8 +7,10 @@ import com.recycle.entity.RecycleOrder;
 import com.recycle.entity.User;
 import com.recycle.mapper.RecycleOrderMapper;
 import com.recycle.mapper.UserMapper;
+import com.recycle.util.QRCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,10 @@ public class CollectorOrderService {
     private final RecycleOrderMapper recycleOrderMapper;
     private final UserMapper userMapper;
     private final OrderStatusLogService orderStatusLogService;
+
+    /** 文件上传目录（用于保存二维码图片） */
+    @Value("${file.upload-path:./uploads/}")
+    private String uploadPath;
 
     /**
      * 校验当前用户是否为回收员角色
@@ -165,18 +171,23 @@ public class CollectorOrderService {
             throw new BusinessException(400, "当前订单状态不可称重");
         }
 
+        // 生成溯源二维码（内容为订单编号，供机构扫码接收）
+        String qrCodeUrl = QRCodeUtil.generateQRCode(order.getOrderNo(), uploadPath);
+
+        // 更新订单：状态改为3（待确认）、记录实际重量、保存二维码URL
         recycleOrderMapper.update(null,
                 new LambdaUpdateWrapper<RecycleOrder>()
                         .eq(RecycleOrder::getId, orderId)
                         .set(RecycleOrder::getStatus, 3)
                         .set(RecycleOrder::getActualWeight, actualWeight)
+                        .set(RecycleOrder::getQrCode, qrCodeUrl)
         );
 
         // 记录状态日志
         orderStatusLogService.log(orderId, 2, 3, userId, "collector",
                 "称重完成，实际重量" + actualWeight + "kg，等待用户确认");
 
-        log.info("回收员 {} 完成称重，订单 {}，重量 {}kg", userId, orderId, actualWeight);
+        log.info("回收员 {} 完成称重，订单 {}，重量 {}kg，二维码 {}", userId, orderId, actualWeight, qrCodeUrl);
     }
 
     /**

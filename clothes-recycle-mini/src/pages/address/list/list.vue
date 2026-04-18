@@ -7,7 +7,7 @@
         v-for="item in addressList"
         :key="item.id"
         class="address-card"
-        @click="handleEdit(item.id)"
+        @click="handleCardClick(item)"
       >
         <!-- 联系人信息 -->
         <view class="address-top">
@@ -52,11 +52,20 @@
  * - 每次页面显示时重新加载列表（从编辑页返回后刷新）
  */
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onLoad } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
 
 // 地址列表数据
 const addressList = ref([])
+
+// 是否为选择模式（从预约回收页跳转过来）
+const isSelectMode = ref(false)
+
+onLoad((options) => {
+  if (options.mode === 'select') {
+    isSelectMode.value = true
+  }
+})
 
 // 页面每次显示时加载地址列表（包括从编辑页返回）
 onShow(() => {
@@ -72,6 +81,18 @@ async function loadAddressList() {
     addressList.value = data || []
   } catch (e) {
     console.error('加载地址列表失败:', e)
+  }
+}
+
+/**
+ * 点击地址卡片：选择模式下选中并返回，普通模式下跳转编辑
+ */
+function handleCardClick(item) {
+  if (isSelectMode.value) {
+    uni.$emit('selectAddress', item)
+    uni.navigateBack()
+  } else {
+    handleEdit(item.id)
   }
 }
 

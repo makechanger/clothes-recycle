@@ -96,6 +96,8 @@ async function handleLogin() {
       data: { phone: phone.value, password: password.value }
     })
 
+    console.log('【登录成功】')
+
     // 保存登录状态，角色由后端返回（USER / COLLECTOR / INSTITUTION）
     userStore.login({
       token: data.token,

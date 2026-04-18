@@ -98,11 +98,61 @@
       </view>
     </view>
 
-    <!-- 机构端首页：接收任务（后续开发） -->
+    <!-- 机构端首页：扫码接收 + 最近接收订单 -->
     <view v-else-if="userStore.isInstitution" class="home-content">
       <view class="welcome">
         <text class="welcome-text">机构工作台</text>
-        <text class="welcome-sub">接收任务将在后续步骤开发</text>
+        <text class="welcome-sub">扫描二维码接收回收订单</text>
+      </view>
+
+      <!-- 扫码接收按钮 -->
+      <view class="scan-area">
+        <button class="scan-btn" @click="handleScan">
+          <text class="scan-icon">📷</text>
+          <text class="scan-text">扫码接收</text>
+        </button>
+      </view>
+
+      <!-- 最近接收的订单 -->
+      <view class="recent-section">
+        <view class="recent-header">
+          <text class="recent-title">最近接收</text>
+          <text class="recent-more" @click="goTo('/pages/order/list/list')">查看全部 ></text>
+        </view>
+
+        <view v-if="receivedOrders.length > 0">
+          <view
+            v-for="order in receivedOrders"
+            :key="order.id"
+            class="received-card"
+          >
+            <!-- 订单头部：订单号 + 状态 -->
+            <view class="pending-header">
+              <text class="pending-no">{{ order.orderNo }}</text>
+              <text class="received-status">已接收</text>
+            </view>
+            <!-- 实际重量 -->
+            <view v-if="order.actualWeight" class="pending-row">
+              <text class="pending-label">实际重量</text>
+              <text class="pending-value">{{ order.actualWeight }}kg</text>
+            </view>
+            <!-- 衣物分类 -->
+            <view class="pending-row">
+              <text class="pending-label">衣物分类</text>
+              <text class="pending-value">{{ parseCategories(order.clothesCategories) }}</text>
+            </view>
+            <!-- 发放积分 -->
+            <view v-if="order.pointsAwarded" class="pending-row">
+              <text class="pending-label">发放积分</text>
+              <text class="pending-value points-value">+{{ order.pointsAwarded }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 空状态 -->
+        <view v-else class="empty">
+          <text class="empty-text">暂无接收记录</text>
+        </view>
       </view>
     </view>
 
@@ -131,10 +181,18 @@ const userStore = useUserStore()
 // 待接单订单列表
 const pendingOrders = ref([])
 
-// 页面每次显示时刷新数据（回收员角色）
+// ==================== 机构端数据 ====================
+
+// 机构最近接收的订单列表
+const receivedOrders = ref([])
+
+// 页面每次显示时刷新数据（根据角色加载不同数据）
 onShow(() => {
   if (userStore.isCollector) {
     loadPendingOrders()
+  }
+  if (userStore.isInstitution) {
+    loadReceivedOrders()
   }
 })
 
@@ -148,6 +206,54 @@ async function loadPendingOrders() {
   } catch (e) {
     console.error('加载待接单列表失败:', e)
   }
+}
+
+/**
+ * 加载机构最近接收的订单（取前5条）
+ */
+async function loadReceivedOrders() {
+  try {
+    const data = await request({ url: '/api/institution/order/list', loading: false })
+    // 只展示最近5条
+    receivedOrders.value = (data || []).slice(0, 5)
+  } catch (e) {
+    console.error('加载机构接收订单失败:', e)
+  }
+}
+
+/**
+ * 机构扫码接收订单
+ * 调用 uni.scanCode 扫描回收员生成的溯源二维码，提取订单编号后调用后端接收接口
+ */
+function handleScan() {
+  uni.scanCode({
+    scanType: ['qrCode'],
+    success: async (res) => {
+      const orderNo = res.result
+      if (!orderNo) {
+        uni.showToast({ title: '二维码内容为空', icon: 'none' })
+        return
+      }
+      try {
+        await request({
+          url: '/api/institution/order/receive',
+          method: 'POST',
+          data: { orderNo }
+        })
+        uni.showToast({ title: '接收成功', icon: 'success' })
+        // 刷新最近接收列表
+        loadReceivedOrders()
+      } catch (e) {
+        console.error('扫码接收失败:', e)
+      }
+    },
+    fail: (err) => {
+      // 用户取消扫码不提示错误
+      if (err.errMsg && err.errMsg.indexOf('cancel') === -1) {
+        uni.showToast({ title: '扫码失败', icon: 'none' })
+      }
+    }
+  })
 }
 
 // ==================== 工具方法 ====================
@@ -376,5 +482,83 @@ function handleAccept(order) {
 .empty-text {
   font-size: 28rpx;
   color: #999;
+}
+
+/* ==================== 机构端样式 ==================== */
+
+/* 扫码按钮区域 */
+.scan-area {
+  display: flex;
+  justify-content: center;
+  margin: 20rpx 0 40rpx;
+}
+
+.scan-btn {
+  width: 400rpx;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #07c160;
+  color: #fff;
+  border-radius: 50rpx;
+  border: none;
+  box-shadow: 0 4rpx 16rpx rgba(7, 193, 96, 0.3);
+}
+
+.scan-icon {
+  font-size: 40rpx;
+  margin-right: 12rpx;
+}
+
+.scan-text {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 最近接收区域 */
+.recent-section {
+  margin-top: 20rpx;
+}
+
+.recent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.recent-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.recent-more {
+  font-size: 24rpx;
+  color: #07c160;
+}
+
+/* 已接收订单卡片 */
+.received-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.received-status {
+  font-size: 24rpx;
+  color: #1565c0;
+  background: #e3f2fd;
+  padding: 4rpx 16rpx;
+  border-radius: 6rpx;
+}
+
+/* 积分高亮 */
+.points-value {
+  color: #f44336;
+  font-weight: bold;
 }
 </style>

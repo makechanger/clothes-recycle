@@ -156,6 +156,7 @@ const userStore = useUserStore()
 // 角色判断
 const isUser = computed(() => userStore.isUser)
 const isCollector = computed(() => userStore.isCollector)
+const isInstitution = computed(() => userStore.isInstitution)
 
 // ==================== 状态配置 ====================
 
@@ -167,7 +168,8 @@ const statusMap = {
   3: '待确认',
   4: '已完成',
   5: '已取消',
-  6: '异常'
+  6: '异常',
+  7: '机构已接收'
 }
 
 // 用户视角的状态描述
@@ -192,9 +194,18 @@ const collectorStatusDesc = {
   6: '订单出现异常'
 }
 
+// 机构视角的状态描述
+const institutionStatusDesc = {
+  4: '用户已确认，等待扫码接收',
+  7: '已完成接收，积分已发放'
+}
+
 // 根据角色返回对应的状态描述
 const currentStatusDesc = computed(() => {
   if (!order.value) return ''
+  if (isInstitution.value) {
+    return institutionStatusDesc[order.value.status] || ''
+  }
   const descMap = isCollector.value ? collectorStatusDesc : userStatusDesc
   return descMap[order.value.status] || ''
 })
@@ -216,6 +227,8 @@ const photoList = ref([])
 // 是否显示操作按钮（根据角色和状态判断）
 const showActions = computed(() => {
   if (!order.value) return false
+  // 机构端：无操作按钮
+  if (isInstitution.value) return false
   if (isCollector.value) {
     // 回收员：待接单(0)可接单，已接单(1)可上门，上门中(2)可称重
     return order.value.status === 0 || order.value.status === 1 || order.value.status === 2
@@ -330,14 +343,13 @@ function handleCancel() {
 }
 
 /**
- * 用户确认完成订单（确认称重结果，发放积分）
+ * 用户确认完成订单（确认称重结果，等待机构接收后发放积分）
  */
 function handleConfirm() {
   const weight = order.value.actualWeight || 0
-  const points = Math.floor(weight * 10)
   uni.showModal({
     title: '确认完成',
-    content: `实际重量 ${weight}kg，确认后将获得 ${points} 积分`,
+    content: `实际重量 ${weight}kg，确认后等待机构接收发放积分`,
     success: async (res) => {
       if (res.confirm) {
         try {
@@ -345,7 +357,7 @@ function handleConfirm() {
             url: `/api/user/order/${order.value.id}/confirm`,
             method: 'POST'
           })
-          uni.showToast({ title: '确认成功，积分已发放', icon: 'success' })
+          uni.showToast({ title: '确认成功', icon: 'success' })
           // 重新加载详情
           loadOrderDetail(orderId.value)
         } catch (e) {
@@ -415,9 +427,9 @@ function handleComplete() {
   // 弹出输入框让回收员填写实际重量
   uni.showModal({
     title: '完成称重',
-    content: '请输入实际称重重量(kg)',
+    content: '',
     editable: true,
-    placeholderText: '例如: 5.5',
+    placeholderText: '请输入实际称重重量(kg)，例如: 5.5',
     success: async (res) => {
       if (res.confirm) {
         const input = res.content && res.content.trim()
@@ -482,6 +494,7 @@ function handleComplete() {
 .status-bg-4 { background: linear-gradient(135deg, #4caf50, #66bb6a); }
 .status-bg-5 { background: linear-gradient(135deg, #9e9e9e, #bdbdbd); }
 .status-bg-6 { background: linear-gradient(135deg, #f44336, #e53935); }
+.status-bg-7 { background: linear-gradient(135deg, #1565c0, #42a5f5); }
 
 /* 区块样式 */
 .section {
