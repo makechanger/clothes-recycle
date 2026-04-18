@@ -41,6 +41,18 @@ const routes = [
         name: 'Users',
         component: () => import('../views/user/UserView.vue'),
         meta: { title: '用户管理' }
+      },
+      {
+        path: 'reviews',
+        name: 'Reviews',
+        component: () => import('../views/review/ReviewView.vue'),
+        meta: { title: '评价管理' }
+      },
+      {
+        path: 'complaints',
+        name: 'Complaints',
+        component: () => import('../views/complaint/ComplaintView.vue'),
+        meta: { title: '申诉管理' }
       }
     ]
   }

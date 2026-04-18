@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：第 3 周管理后台开发完成 — Step 3.1~3.7+ ✅ 全部完成
+## 当前状态：第 4 周功能补全进行中 — Step 4.2 ✅ 完成，Step 4.3~4.13 待开发
 
 ---
 
@@ -457,3 +457,73 @@
 **3. 后端启动冲突修复：**
 - 问题：`AdminController.java` 从 `controller/` 移动到 `controller/admin/` 后，旧 `.class` 文件残留导致 `ConflictingBeanDefinitionException`
 - 修复：执行 `mvn clean compile` 清除 `target/` 目录中的旧编译产物
+
+---
+
+## 第 4 周：补全功能 + 优化 + 答辩准备
+
+### Step 4.1 ❌ 积分商城 — 已取消（2026-04-18）
+
+**取消原因：** 工作量大但对核心回收链路贡献不高，用数据统计看板替代。
+
+---
+
+### Step 4.2 ✅ 评价与申诉（4h）— 2026-04-18 完成
+
+**完成内容：**
+
+**后端新增文件：**
+- `entity/ServiceReview.java`：服务评价实体
+- `entity/Complaint.java`：申诉实体（含 action、refundAmount 字段）
+- `mapper/ServiceReviewMapper.java`
+- `mapper/ComplaintMapper.java`
+- `dto/ReviewRequest.java`：评价请求 DTO（orderId, punctualityScore, attitudeScore, weighingScore, content）
+- `dto/ComplaintRequest.java`：申诉请求 DTO（orderId, type, description）
+- `service/ReviewService.java`：评价服务（提交评价、查询评价列表）
+- `service/ComplaintService.java`：申诉服务（提交申诉、查询列表、管理员处理）
+
+**后端修改文件：**
+- `controller/user/UserController.java`：新增评价提交/查询 + 申诉提交/列表接口
+- `controller/admin/AdminController.java`：新增评价列表 + 申诉列表/处理接口
+- `service/PointsService.java`：新增 `addPoints()`、`adminDeductPoints()` 方法
+
+**小程序修改文件：**
+- `pages/order/detail/detail.vue`：新增评价弹窗（三维度星级评分 + 文字）+ 申诉弹窗（类型选择 + 描述）
+
+**管理后台新增文件：**
+- `api/review.js`：评价管理 API
+- `api/complaint.js`：申诉管理 API
+- `views/review/ReviewView.vue`：评价管理页面（星级展示 + 分页）
+- `views/complaint/ComplaintView.vue`：申诉管理页面（状态筛选 + 处理弹窗）
+- `components/OrderDetailDialog.vue`：订单详情弹窗组件（从 OrderView 抽取复用）
+
+**管理后台修改文件：**
+- `router/index.js`：添加 /reviews 和 /complaints 路由
+- `views/layout/AdminLayout.vue`：启用"评价管理"和"申诉管理"菜单项
+- `views/order/OrderView.vue`：详情弹窗改用 OrderDetailDialog 组件
+
+**申诉处理增强：**
+- 3 种处理动作：增加积分（ADD_POINTS）/ 减少积分（DEDUCT_POINTS）/ 标记订单异常（MARK_ABNORMAL）
+- 管理员处理弹窗：选择动作 + 输入积分数量 + 填写备注
+
+**SQL 迁移脚本：**
+- `step4_2_review_complaint.sql`：创建 service_review 和 complaint 表
+- `step4_2_enhance_complaint.sql`：complaint 表新增 action 和 refund_amount 字段
+
+---
+
+### 下一步计划（Step 4.3 ~ 4.13）
+
+| 步骤 | 优先级 | 内容 | 预计耗时 | 状态 |
+|------|--------|------|----------|------|
+| 4.3 | 🔴 P0 | 后端数据统计聚合接口（AdminStatisticsService） | 2h | 未开始 |
+| 4.4 | 🔴 P0 | 前端数据统计看板页面（ECharts） | 2h | 未开始 |
+| 4.5 | 🟡 P1 | 小程序我的申诉列表页 | 1h | 未开始 |
+| 4.6 | 🟡 P1 | 小程序我的评价记录页 | 1h | 未开始 |
+| 4.7 | 🟡 P1 | 小程序积分流水明细页 | 1.5h | 未开始 |
+| 4.8 | 🟡 P1 | 小程序订单详情状态时间线 | 1h | 未开始 |
+| 4.9 | 🟡 P1 | 小程序接单后展示回收员实名信息 | 0.5h | 未开始 |
+| 4.10 | 🟡 P1 | 机构端接收数据统计页 | 1.5h | 未开始 |
+| 4.11 | 🟡 P1 | 管理后台回收员平均评分展示 | 0.5h | 未开始 |
+| 4.12 | 🟡 P1 | 管理后台订单+用户列表导出 Excel | 1.5h | 未开始 |
+| 4.13 | 🔴 P0 | 体验优化与演示准备 | 6h | 未开始 |

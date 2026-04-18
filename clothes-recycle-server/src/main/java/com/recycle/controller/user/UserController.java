@@ -3,22 +3,24 @@ package com.recycle.controller.user;
 import cn.dev33.satoken.stp.StpUtil;
 import com.recycle.common.Result;
 import com.recycle.dto.ChangePasswordRequest;
+import com.recycle.dto.ComplaintRequest;
 import com.recycle.dto.CreateOrderRequest;
+import com.recycle.dto.ReviewRequest;
 import com.recycle.dto.RoleApplicationRequest;
 import com.recycle.dto.UserAddressRequest;
 import com.recycle.entity.RecycleOrder;
+import com.recycle.entity.ServiceReview;
 import com.recycle.entity.UserAddress;
 import com.recycle.service.AuthService;
+import com.recycle.service.ComplaintService;
 import com.recycle.service.RecycleOrderService;
+import com.recycle.service.ReviewService;
 import com.recycle.service.RoleApplicationService;
-import com.recycle.service.UserAddressService;
 import com.recycle.service.UserAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 import java.util.List;
 
@@ -38,6 +40,8 @@ public class UserController {
     private final RoleApplicationService roleApplicationService;
     private final UserAddressService userAddressService;
     private final RecycleOrderService recycleOrderService;
+    private final ReviewService reviewService;
+    private final ComplaintService complaintService;
 
     /**
      * 修改密码（所有角色通用）
@@ -205,5 +209,51 @@ public class UserController {
         Long userId = StpUtil.getLoginIdAsLong();
         recycleOrderService.confirmOrder(id, userId);
         return Result.success();
+    }
+
+    // ==================== 评价接口 ====================
+
+    /**
+     * 提交评价
+     * 仅机构已接收(status=7)的订单可评价，每个订单只能评价一次，评价后 +2 积分
+     */
+    @Operation(summary = "提交评价")
+    @PostMapping("/review/submit")
+    public Result<ServiceReview> reviewSubmit(@RequestBody ReviewRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        ServiceReview review = reviewService.submitReview(userId, request);
+        return Result.success(review);
+    }
+
+    /**
+     * 查询订单评价（判断是否已评价）
+     */
+    @Operation(summary = "查询订单评价")
+    @GetMapping("/review/{orderId}")
+    public Result<ServiceReview> getReview(@PathVariable Long orderId) {
+        return Result.success(reviewService.getReviewByOrderId(orderId));
+    }
+
+    // ==================== 申诉接口 ====================
+
+    /**
+     * 提交申诉
+     */
+    @Operation(summary = "提交申诉")
+    @PostMapping("/complaint/submit")
+    public Result<?> complaintSubmit(@RequestBody ComplaintRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        complaintService.submitComplaint(userId, request);
+        return Result.success();
+    }
+
+    /**
+     * 查询我的申诉列表
+     */
+    @Operation(summary = "我的申诉列表")
+    @GetMapping("/complaint/list")
+    public Result<?> complaintList() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(complaintService.getMyComplaints(userId));
     }
 }

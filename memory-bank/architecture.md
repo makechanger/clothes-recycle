@@ -1,6 +1,6 @@
 # 项目架构
 
-> 最后更新：2026-04-18（Step 3.7+ 用户管理完成后）
+> 最后更新：2026-04-18（Step 4.2 评价与申诉完成后）
 
 ## 技术架构总览
 
@@ -77,8 +77,10 @@ clothes-recycle-server/
     │   │   ├── CollectorOrderService.java   # 回收员订单（接单/上门/称重）
     │   │   ├── InstitutionOrderService.java # 机构订单（扫码接收）
     │   │   ├── OrderStatusLogService.java   # 订单状态流转日志
-    │   │   ├── PointsService.java           # 积分发放
+    │   │   ├── PointsService.java           # 积分发放/增减（addPoints/adminDeductPoints）
     │   │   ├── PointsRuleService.java       # 积分规则查询
+    │   │   ├── ReviewService.java           # 服务评价（提交/查询）
+    │   │   ├── ComplaintService.java        # 申诉（提交/查询/管理员处理3种动作）
     │   │   ├── AdminOrderService.java       # 管理员订单查询（分页+详情）
     │   │   ├── AdminCollectorService.java   # 管理员回收员管理（创建/审批）
     │   │   └── AdminUserService.java        # 管理员用户管理（列表/状态/密码/角色）
@@ -93,7 +95,9 @@ clothes-recycle-server/
     │   │   ├── RecycleOrderMapper.java
     │   │   ├── OrderStatusLogMapper.java
     │   │   ├── PointsRuleMapper.java
-    │   │   └── PointsTransactionMapper.java
+    │   │   ├── PointsTransactionMapper.java
+    │   │   ├── ServiceReviewMapper.java
+    │   │   └── ComplaintMapper.java
     │   ├── entity/
     │   │   ├── User.java            # 用户（含 role 字段：USER/COLLECTOR/INSTITUTION）
     │   │   ├── Collector.java       # 回收员扩展信息（通过 userId 关联 user）
@@ -105,7 +109,9 @@ clothes-recycle-server/
     │   │   ├── RecycleOrder.java    # 回收订单
     │   │   ├── OrderStatusLog.java  # 订单状态日志
     │   │   ├── PointsRule.java      # 积分规则
-    │   │   └── PointsTransaction.java # 积分流水
+    │   │   ├── PointsTransaction.java # 积分流水
+    │   │   ├── ServiceReview.java   # 服务评价（三维度星级 + 文字）
+    │   │   └── Complaint.java       # 异常申诉（含 action/refundAmount）
     │   ├── dto/
     │   │   ├── LoginRequest.java        # 登录请求（phone, password）
     │   │   ├── LoginResponse.java       # 登录响应（token, role, userInfo）
@@ -118,7 +124,9 @@ clothes-recycle-server/
     │   │   ├── CompleteWeighingRequest.java  # 称重完成请求
     │   │   ├── ScanReceiveRequest.java  # 机构扫码接收请求
     │   │   ├── CreateCollectorRequest.java  # 管理员创建回收员请求
-    │   │   └── CollectorVO.java         # 回收员视图对象
+    │   │   ├── CollectorVO.java         # 回收员视图对象
+    │   │   ├── ReviewRequest.java       # 评价请求（orderId, 三维度评分, content）
+    │   │   └── ComplaintRequest.java    # 申诉请求（orderId, type, description）
     │   └── util/
     │       └── QRCodeUtil.java          # 二维码生成工具
     └── resources/
@@ -128,7 +136,9 @@ clothes-recycle-server/
             ├── step1_5_auth.sql         # 认证相关补充
             ├── role_application.sql     # 角色申请表
             ├── step2_refactor_role.sql  # 方案 B 重构（统一用户表 + 扩展表）
-            └── step3_1_points.sql       # 积分相关表
+            ├── step3_1_points.sql       # 积分相关表
+            ├── step4_2_review_complaint.sql    # 评价表 + 申诉表
+            └── step4_2_enhance_complaint.sql   # 申诉表增强（action/refundAmount）
 ```
 
 ## 管理后台项目结构
@@ -151,21 +161,29 @@ clothes-recycle-admin/
     │   ├── collector.js             # 回收员管理 API
     │   ├── order.js                 # 订单管理 API
     │   ├── pointsRule.js            # 积分规则 API
-    │   └── user.js                  # 用户管理 API
+    │   ├── user.js                  # 用户管理 API
+    │   ├── review.js                # 评价管理 API
+    │   └── complaint.js             # 申诉管理 API
     └── views/
         ├── login/
         │   └── LoginView.vue        # 登录页（Element Plus 表单，渐变背景）
         ├── layout/
         │   ├── AdminLayout.vue      # 后台骨架（侧边栏+顶栏+内容区）
-        │   └── DashboardView.vue    # 仪表盘占位页
+        │   └── DashboardView.vue    # 仪表盘占位页（待 Step 4.4 改造为 ECharts 看板）
         ├── collector/
         │   └── CollectorView.vue    # 回收员管理（列表 Tab + 待审核 Tab）
         ├── order/
         │   └── OrderView.vue        # 订单管理（筛选+分页+详情弹窗+时间线）
         ├── points/
         │   └── PointsRuleView.vue   # 积分规则（规则表格+编辑弹窗）
-        └── user/
-            └── UserView.vue         # 用户管理（筛选+分页+状态/密码/角色操作）
+        ├── user/
+        │   └── UserView.vue         # 用户管理（筛选+分页+状态/密码/角色操作）
+        ├── review/
+        │   └── ReviewView.vue       # 评价管理（星级展示+分页）
+        ├── complaint/
+        │   └── ComplaintView.vue    # 申诉管理（状态筛选+处理弹窗，3种动作）
+        └── components/
+            └── OrderDetailDialog.vue # 订单详情弹窗组件（复用于订单/评价/申诉页）
 ```
 
 ## 数据库表结构
@@ -184,13 +202,13 @@ clothes_recycle (MySQL 8.0, utf8mb4)
 ├── recycle_order      # 回收订单表（核心业务表）
 ├── order_status_log   # 订单状态流转记录
 ├── points_rule        # 积分规则表
-└── points_transaction # 积分流水表
+├── points_transaction # 积分流水表
+├── service_review     # 服务评价表（三维度星级：准时/态度/称重 + 文字）
+└── complaint          # 异常申诉表（含 action/refund_amount 处理动作字段）
 
-后续分步补建：
-├── points_product     # 积分商品表
-├── points_exchange_order # 积分兑换订单表
-├── service_review     # 服务评价表
-└── complaint          # 异常申诉表
+已取消（不再实现）：
+├── points_product         # 积分商品表（积分商城已取消）
+└── points_exchange_order  # 积分兑换订单表（积分商城已取消）
 ```
 
 ## 小程序项目结构

@@ -110,6 +110,23 @@
           class="action-btn confirm-btn"
           @click="handleConfirm"
         >确认完成</button>
+        <!-- 机构已接收：评价 + 申诉 -->
+        <button
+          v-if="order.status === 7 && !reviewed"
+          class="action-btn confirm-btn"
+          @click="showReviewPopup = true"
+        >评价</button>
+        <button
+          v-if="order.status === 7 && reviewed"
+          class="action-btn"
+          style="background: #e0e0e0; color: #999;"
+          disabled
+        >已评价</button>
+        <button
+          v-if="order.status === 7"
+          class="action-btn pickup-btn"
+          @click="showComplaintPopup = true"
+        >申诉</button>
       </template>
 
       <!-- ===== 回收员操作 ===== -->
@@ -133,6 +150,93 @@
           @click="handleComplete"
         >完成称重</button>
       </template>
+    </view>
+
+    <!-- ===== 评价弹窗 ===== -->
+    <view v-if="showReviewPopup" class="popup-mask" @click.self="showReviewPopup = false">
+      <view class="popup-content">
+        <view class="popup-title">评价回收服务</view>
+
+        <!-- 准时度 -->
+        <view class="rating-row">
+          <text class="rating-label">准时度</text>
+          <view class="stars">
+            <text
+              v-for="i in 5" :key="'p'+i"
+              class="star"
+              :class="{ active: reviewForm.punctualityScore >= i }"
+              @click="reviewForm.punctualityScore = i"
+            >★</text>
+          </view>
+        </view>
+
+        <!-- 态度 -->
+        <view class="rating-row">
+          <text class="rating-label">服务态度</text>
+          <view class="stars">
+            <text
+              v-for="i in 5" :key="'a'+i"
+              class="star"
+              :class="{ active: reviewForm.attitudeScore >= i }"
+              @click="reviewForm.attitudeScore = i"
+            >★</text>
+          </view>
+        </view>
+
+        <!-- 称重规范度 -->
+        <view class="rating-row">
+          <text class="rating-label">称重规范</text>
+          <view class="stars">
+            <text
+              v-for="i in 5" :key="'w'+i"
+              class="star"
+              :class="{ active: reviewForm.weighingScore >= i }"
+              @click="reviewForm.weighingScore = i"
+            >★</text>
+          </view>
+        </view>
+
+        <!-- 文字评价 -->
+        <textarea
+          v-model="reviewForm.content"
+          class="popup-textarea"
+          placeholder="请输入评价内容（选填）"
+          maxlength="500"
+        />
+
+        <view class="popup-btns">
+          <button class="popup-btn cancel" @click="showReviewPopup = false">取消</button>
+          <button class="popup-btn submit" @click="submitReview">提交评价</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 申诉弹窗 ===== -->
+    <view v-if="showComplaintPopup" class="popup-mask" @click="showComplaintPopup = false">
+      <view class="popup-content" @click.stop>
+        <view class="popup-title">提交申诉</view>
+
+        <!-- 申诉类型 -->
+        <view class="complaint-type-row">
+          <text class="rating-label">申诉类型</text>
+          <picker :range="complaintTypeLabels" @change="onComplaintTypeChange">
+            <view class="type-picker">{{ complaintTypeLabels[complaintForm.typeIndex] || '请选择' }}</view>
+          </picker>
+        </view>
+
+        <!-- 申诉描述 -->
+        <textarea
+          v-model="complaintForm.description"
+          class="popup-textarea"
+          placeholder="请详细描述您的问题（必填）"
+          maxlength="1000"
+        />
+
+        <view class="popup-btns">
+          <button class="popup-btn cancel" @click="showComplaintPopup = false">取消</button>
+          <button class="popup-btn submit" @click="submitComplaint">提交申诉</button>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -224,6 +328,33 @@ const addressInfo = ref(null)
 // 解析后的照片列表
 const photoList = ref([])
 
+// ==================== 评价/申诉相关 ====================
+
+// 是否已评价
+const reviewed = ref(false)
+
+// 评价弹窗
+const showReviewPopup = ref(false)
+const reviewForm = ref({
+  punctualityScore: 5,
+  attitudeScore: 5,
+  weighingScore: 5,
+  content: ''
+})
+
+// 申诉弹窗
+const showComplaintPopup = ref(false)
+const complaintTypes = ['WEIGHT_DISPUTE', 'SERVICE_ISSUE', 'ITEM_LOST', 'OTHER']
+const complaintTypeLabels = ['称重不符', '服务问题', '物品丢失', '其他']
+const complaintForm = ref({
+  typeIndex: 0,
+  description: ''
+})
+
+function onComplaintTypeChange(e) {
+  complaintForm.value.typeIndex = e.detail.value
+}
+
 // 是否显示操作按钮（根据角色和状态判断）
 const showActions = computed(() => {
   if (!order.value) return false
@@ -233,8 +364,8 @@ const showActions = computed(() => {
     // 回收员：待接单(0)可接单，已接单(1)可上门，上门中(2)可称重
     return order.value.status === 0 || order.value.status === 1 || order.value.status === 2
   }
-  // 用户：待接单/已接单(0/1)可取消，待确认(3)可确认
-  return order.value.status === 0 || order.value.status === 1 || order.value.status === 3
+  // 用户：待接单/已接单(0/1)可取消，待确认(3)可确认，机构已接收(7)可评价/申诉
+  return order.value.status === 0 || order.value.status === 1 || order.value.status === 3 || order.value.status === 7
 })
 
 // ==================== 页面加载 ====================
@@ -275,6 +406,16 @@ async function loadOrderDetail(id) {
         photoList.value = JSON.parse(data.photos)
       } catch {
         photoList.value = []
+      }
+    }
+
+    // 用户 + 机构已接收：检查是否已评价
+    if (isUser.value && data.status === 7) {
+      try {
+        const review = await request({ url: `/api/user/review/${id}` })
+        reviewed.value = !!review
+      } catch {
+        reviewed.value = false
       }
     }
   } catch (e) {
@@ -458,6 +599,65 @@ function handleComplete() {
     }
   })
 }
+
+// ==================== 评价/申诉操作 ====================
+
+/**
+ * 提交评价
+ */
+async function submitReview() {
+  const form = reviewForm.value
+  if (!form.punctualityScore || !form.attitudeScore || !form.weighingScore) {
+    uni.showToast({ title: '请完成所有评分', icon: 'none' })
+    return
+  }
+  try {
+    await request({
+      url: '/api/user/review/submit',
+      method: 'POST',
+      data: {
+        orderId: order.value.id,
+        punctualityScore: form.punctualityScore,
+        attitudeScore: form.attitudeScore,
+        weighingScore: form.weighingScore,
+        content: form.content || null
+      }
+    })
+    uni.showToast({ title: '评价成功，积分+2', icon: 'success' })
+    showReviewPopup.value = false
+    reviewed.value = true
+  } catch (e) {
+    console.error('提交评价失败:', e)
+  }
+}
+
+/**
+ * 提交申诉
+ */
+async function submitComplaint() {
+  const form = complaintForm.value
+  if (!form.description || !form.description.trim()) {
+    uni.showToast({ title: '请输入申诉描述', icon: 'none' })
+    return
+  }
+  try {
+    await request({
+      url: '/api/user/complaint/submit',
+      method: 'POST',
+      data: {
+        orderId: order.value.id,
+        type: complaintTypes[form.typeIndex],
+        description: form.description.trim()
+      }
+    })
+    uni.showToast({ title: '申诉已提交', icon: 'success' })
+    showComplaintPopup.value = false
+    // 重置表单
+    complaintForm.value = { typeIndex: 0, description: '' }
+  } catch (e) {
+    console.error('提交申诉失败:', e)
+  }
+}
 </script>
 
 <style scoped>
@@ -618,6 +818,116 @@ function handleComplete() {
 /* 开始上门按钮（蓝色） */
 .pickup-btn {
   background: #2196f3;
+  color: #fff;
+}
+
+/* ===== 弹窗样式 ===== */
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.popup-content {
+  width: 85%;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+}
+
+.rating-label {
+  font-size: 28rpx;
+  color: #333;
+  width: 160rpx;
+  flex-shrink: 0;
+}
+
+.stars {
+  display: flex;
+  gap: 12rpx;
+}
+
+.star {
+  font-size: 44rpx;
+  color: #ddd;
+}
+
+.star.active {
+  color: #ffc107;
+}
+
+.popup-textarea {
+  width: 100%;
+  height: 180rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  font-size: 26rpx;
+  margin-top: 20rpx;
+  box-sizing: border-box;
+}
+
+.complaint-type-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+}
+
+.type-picker {
+  padding: 12rpx 24rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.popup-btns {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 30rpx;
+}
+
+.popup-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  text-align: center;
+  border: none;
+}
+
+.popup-btn.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.popup-btn.submit {
+  background: #07c160;
   color: #fff;
 }
 </style>

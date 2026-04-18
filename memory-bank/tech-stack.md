@@ -38,7 +38,7 @@
 | 路由 | Vue Router 4 | 标配 |
 | 状态 | Pinia | Vue 3 官方推荐，比 Vuex 简单 |
 | HTTP | Axios | 拦截器成熟，错误处理方便 |
-| 图表 | ECharts 5 (按需) | 数据看板用，P1 功能才需要 |
+| 图表 | ECharts 5 (按需) | 数据看板用，Step 4.3-4.4 实现中（替代积分商城） |
 | 后台模板 | **从零搭建** | — | 实际未使用模板，手动搭建骨架布局+路由守卫 |
 
 ### 为什么管理后台首选 Element Plus
@@ -229,7 +229,8 @@ zxing-core + zxing-javase        3.5.x
 | API 文档 | Knife4j | 4.x | 自动生成接口文档 |
 | 工具库 | Hutool | 5.8+ | 一站式工具箱 |
 | 数据库 | MySQL | 8.0 | 国内毕设标配 |
-| 图表 | ECharts | 5.x | 数据看板（P1 功能） |
+| 图表 | ECharts | 5.x | 数据看板（P0，替代积分商城，Step 4.3-4.4） |
+| Excel 导出 | xlsx + file-saver | 最新 | 管理后台订单/用户列表导出（Step 4.12） |
 | 部署 | Docker Compose | 最新 | 一键启动 |
 
 ---

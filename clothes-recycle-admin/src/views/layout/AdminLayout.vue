@@ -32,6 +32,14 @@
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </el-menu-item>
+        <el-menu-item index="/reviews">
+          <el-icon><ChatLineSquare /></el-icon>
+          <span>评价管理</span>
+        </el-menu-item>
+        <el-menu-item index="/complaints">
+          <el-icon><Warning /></el-icon>
+          <span>申诉管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -56,7 +64,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataBoard, List, UserFilled, Setting, User } from '@element-plus/icons-vue'
+import { DataBoard, List, UserFilled, Setting, User, ChatLineSquare, Warning } from '@element-plus/icons-vue'
 import { useAdminStore } from '../../store/admin'
 
 const route = useRoute()

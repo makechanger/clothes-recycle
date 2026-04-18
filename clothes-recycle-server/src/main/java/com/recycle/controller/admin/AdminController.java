@@ -11,7 +11,9 @@ import com.recycle.mapper.AdminMapper;
 import com.recycle.service.AdminCollectorService;
 import com.recycle.service.AdminOrderService;
 import com.recycle.service.AdminUserService;
+import com.recycle.service.ComplaintService;
 import com.recycle.service.PointsRuleService;
+import com.recycle.service.ReviewService;
 import com.recycle.service.RoleApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +41,8 @@ public class AdminController {
     private final AdminOrderService adminOrderService;
     private final PointsRuleService pointsRuleService;
     private final AdminUserService adminUserService;
+    private final ReviewService reviewService;
+    private final ComplaintService complaintService;
 
     /**
      * 管理员登录
@@ -253,6 +257,46 @@ public class AdminController {
     @DeleteMapping("/users/{id}")
     public Result<?> deleteUser(@PathVariable Long id) {
         adminUserService.deleteUser(id);
+        return Result.success(null);
+    }
+
+    // ==================== 评价管理 ====================
+
+    /**
+     * 分页查询评价列表
+     */
+    @Operation(summary = "评价列表（分页）")
+    @GetMapping("/reviews")
+    public Result<?> listReviews(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return Result.success(reviewService.listReviews(page, size));
+    }
+
+    // ==================== 申诉管理 ====================
+
+    /**
+     * 分页查询申诉列表（可按状态筛选）
+     */
+    @Operation(summary = "申诉列表（分页）")
+    @GetMapping("/complaints")
+    public Result<?> listComplaints(
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return Result.success(complaintService.listComplaints(status, page, size));
+    }
+
+    /**
+     * 处理申诉
+     */
+    @Operation(summary = "处理申诉")
+    @PostMapping("/complaints/{id}/handle")
+    public Result<?> handleComplaint(@PathVariable Long id, @RequestBody Map<String, Object> params) {
+        String adminRemark = (String) params.get("adminRemark");
+        String action = (String) params.get("action");
+        Integer refundAmount = params.get("refundAmount") != null ? ((Number) params.get("refundAmount")).intValue() : null;
+        complaintService.handleComplaint(id, adminRemark, action, refundAmount);
         return Result.success(null);
     }
 }

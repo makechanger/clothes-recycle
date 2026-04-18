@@ -122,6 +122,72 @@ public class PointsService {
     }
 
     /**
+     * 退还积分（申诉处理时调用）
+     */
+    @Transactional
+    public void refundPoints(Long userId, int amount, Long orderId, String description) {
+        if (amount <= 0) {
+            throw new BusinessException(400, "退还积分数量必须为正数");
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+
+        int balanceAfter = user.getPointsBalance() + amount;
+
+        PointsTransaction transaction = new PointsTransaction();
+        transaction.setUserId(userId);
+        transaction.setType("REFUND");
+        transaction.setAmount(amount);
+        transaction.setBalanceAfter(balanceAfter);
+        transaction.setRelatedOrderId(orderId);
+        transaction.setDescription(description);
+        pointsTransactionMapper.insert(transaction);
+
+        user.setPointsBalance(balanceAfter);
+        userMapper.updateById(user);
+
+        log.info("用户 {} 退还 {} 积分，当前余额 {}，关联订单ID {}", userId, amount, balanceAfter, orderId);
+    }
+
+    /**
+     * 管理员扣减积分（申诉处理时调用）
+     */
+    @Transactional
+    public void adminDeductPoints(Long userId, int amount, Long orderId, String description) {
+        if (amount <= 0) {
+            throw new BusinessException(400, "扣减积分数量必须为正数");
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+
+        if (user.getPointsBalance() < amount) {
+            throw new BusinessException(400, "用户积分余额不足，当前余额：" + user.getPointsBalance());
+        }
+
+        int balanceAfter = user.getPointsBalance() - amount;
+
+        PointsTransaction transaction = new PointsTransaction();
+        transaction.setUserId(userId);
+        transaction.setType("ADMIN_DEDUCT");
+        transaction.setAmount(-amount);
+        transaction.setBalanceAfter(balanceAfter);
+        transaction.setRelatedOrderId(orderId);
+        transaction.setDescription(description);
+        pointsTransactionMapper.insert(transaction);
+
+        user.setPointsBalance(balanceAfter);
+        userMapper.updateById(user);
+
+        log.info("管理员扣减用户 {} 积分 {}，当前余额 {}，关联订单ID {}", userId, amount, balanceAfter, orderId);
+    }
+
+    /**
      * 查询用户积分流水列表
      * 按创建时间倒序排列，最新的流水在前
      *
