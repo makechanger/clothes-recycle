@@ -21,6 +21,14 @@
         <text>资质申请</text>
         <text class="arrow">></text>
       </view>
+      <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/complaint/list/list')">
+        <text>我的申诉</text>
+        <text class="arrow">></text>
+      </view>
+      <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/points/history/history')">
+        <text>积分明细</text>
+        <text class="arrow">></text>
+      </view>
       <view class="menu-item logout" @click="handleLogout">
         <text>退出登录</text>
       </view>

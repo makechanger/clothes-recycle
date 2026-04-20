@@ -21,6 +21,19 @@
       </view>
     </view>
 
+    <!-- 回收员信息（已接单后展示） -->
+    <view v-if="isUser && collectorInfo" class="section">
+      <view class="section-title">回收员信息</view>
+      <view class="detail-row">
+        <text class="detail-label">姓名</text>
+        <text class="detail-value">{{ collectorInfo.name }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">联系电话</text>
+        <text class="detail-value collector-phone" @click="callCollector">{{ collectorInfo.phone }}</text>
+      </view>
+    </view>
+
     <!-- 预约信息 -->
     <view class="section">
       <view class="section-title">预约信息</view>
@@ -91,6 +104,28 @@
       <view v-if="order.cancelledAt" class="detail-row">
         <text class="detail-label">取消时间</text>
         <text class="detail-value">{{ order.cancelledAt }}</text>
+      </view>
+    </view>
+
+    <!-- 状态时间线 -->
+    <view v-if="statusLogs.length > 0" class="section">
+      <view class="section-title">订单跟踪</view>
+      <view class="timeline">
+        <view
+          v-for="(log, index) in statusLogs"
+          :key="log.id"
+          class="timeline-item"
+        >
+          <view class="timeline-left">
+            <view :class="['timeline-dot', index === statusLogs.length - 1 ? 'dot-active' : '']"></view>
+            <view v-if="index < statusLogs.length - 1" class="timeline-line"></view>
+          </view>
+          <view class="timeline-content">
+            <text class="timeline-title">{{ statusMap[log.toStatus] || '状态变更' }}</text>
+            <text v-if="log.remark" class="timeline-remark">{{ log.remark }}</text>
+            <text class="timeline-time">{{ log.createdAt }}</text>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -328,6 +363,12 @@ const addressInfo = ref(null)
 // 解析后的照片列表
 const photoList = ref([])
 
+// 状态时间线日志
+const statusLogs = ref([])
+
+// 回收员信息
+const collectorInfo = ref(null)
+
 // ==================== 评价/申诉相关 ====================
 
 // 是否已评价
@@ -389,28 +430,32 @@ async function loadOrderDetail(id) {
       : `/api/user/order/${id}`
 
     const data = await request({ url })
-    order.value = data
+    order.value = data.order
+    statusLogs.value = data.statusLogs || []
 
     // 解析地址快照 JSON
-    if (data.addressSnapshot) {
+    if (data.order.addressSnapshot) {
       try {
-        addressInfo.value = JSON.parse(data.addressSnapshot)
+        addressInfo.value = JSON.parse(data.order.addressSnapshot)
       } catch {
         addressInfo.value = null
       }
     }
 
     // 解析照片列表 JSON
-    if (data.photos) {
+    if (data.order.photos) {
       try {
-        photoList.value = JSON.parse(data.photos)
+        photoList.value = JSON.parse(data.order.photos)
       } catch {
         photoList.value = []
       }
     }
 
+    // 回收员信息
+    collectorInfo.value = data.collectorInfo || null
+
     // 用户 + 机构已接收：检查是否已评价
-    if (isUser.value && data.status === 7) {
+    if (isUser.value && data.order.status === 7) {
       try {
         const review = await request({ url: `/api/user/review/${id}` })
         reviewed.value = !!review
@@ -425,6 +470,12 @@ async function loadOrderDetail(id) {
 }
 
 // ==================== 工具方法 ====================
+
+function callCollector() {
+  if (collectorInfo.value?.phone) {
+    uni.makePhoneCall({ phoneNumber: collectorInfo.value.phone })
+  }
+}
 
 /**
  * 解析衣物分类 JSON 数组
@@ -760,6 +811,11 @@ async function submitComplaint() {
   font-weight: bold;
 }
 
+.collector-phone {
+  color: #07c160;
+  text-decoration: underline;
+}
+
 /* 照片列表 */
 .photo-list {
   display: flex;
@@ -929,5 +985,69 @@ async function submitComplaint() {
 .popup-btn.submit {
   background: #07c160;
   color: #fff;
+}
+
+/* 状态时间线 */
+.timeline {
+  padding: 10rpx 0 0 10rpx;
+}
+
+.timeline-item {
+  display: flex;
+  min-height: 100rpx;
+}
+
+.timeline-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40rpx;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: #ccc;
+  margin-top: 6rpx;
+}
+
+.timeline-dot.dot-active {
+  background: #07c160;
+  box-shadow: 0 0 8rpx rgba(7, 193, 96, 0.4);
+}
+
+.timeline-line {
+  width: 2rpx;
+  flex: 1;
+  background: #e0e0e0;
+  margin: 8rpx 0;
+}
+
+.timeline-content {
+  flex: 1;
+  padding: 0 0 24rpx 16rpx;
+}
+
+.timeline-title {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.timeline-remark {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 6rpx;
+}
+
+.timeline-time {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
 }
 </style>

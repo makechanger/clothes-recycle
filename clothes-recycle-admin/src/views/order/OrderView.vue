@@ -25,6 +25,7 @@
       </el-select>
       <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="handleReset">重置</el-button>
+      <el-button type="success" @click="handleExport">导出 Excel</el-button>
     </div>
 
     <!-- 订单表格 -->
@@ -90,8 +91,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { getOrders } from '../../api/order'
 import OrderDetailDialog from '../../components/OrderDetailDialog.vue'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
 
 /* ========== 订单状态映射 ========== */
 
@@ -159,6 +163,30 @@ function handleReset() {
   filters.status = null
   pagination.page = 1
   loadOrders()
+}
+
+/* ========== 导出 Excel ========== */
+
+function handleExport() {
+  if (!orders.value.length) {
+    ElMessage.warning('当前无数据可导出')
+    return
+  }
+  const rows = orders.value.map(row => ({
+    '订单号': row.orderNo,
+    '下单用户': `${row.userName || '-'}（${row.userPhone || '-'}）`,
+    '衣物分类': row.clothesCategories || '-',
+    '预估重量(kg)': row.estimatedWeight ?? '-',
+    '实际重量(kg)': row.actualWeight ?? '-',
+    '状态': statusText(row.status),
+    '积分': row.pointsAwarded ?? '-',
+    '下单时间': formatTime(row.createdAt)
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '订单列表')
+  const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  saveAs(new Blob([buf], { type: 'application/octet-stream' }), '订单列表.xlsx')
 }
 
 /* ========== 工具函数 ========== */

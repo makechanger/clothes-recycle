@@ -31,6 +31,7 @@
       </el-select>
       <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="handleReset">重置</el-button>
+      <el-button type="success" @click="handleExport">导出 Excel</el-button>
     </div>
 
     <!-- 用户表格 -->
@@ -115,6 +116,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUsers, toggleUserStatus, resetUserPassword, changeUserRole, deleteUser } from '../../api/user'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
 
 /* ========== 状态变量 ========== */
 
@@ -253,6 +256,29 @@ async function handleChangeRole() {
   } finally {
     changingRole.value = false
   }
+}
+
+/* ========== 导出 Excel ========== */
+
+function handleExport() {
+  if (!users.value.length) {
+    ElMessage.warning('当前无数据可导出')
+    return
+  }
+  const rows = users.value.map(row => ({
+    'ID': row.id,
+    '手机号': row.phone,
+    '姓名': row.name || '-',
+    '角色': roleText(row.role),
+    '积分余额': row.pointsBalance ?? 0,
+    '状态': row.status === 1 ? '正常' : '禁用',
+    '注册时间': formatTime(row.createdAt)
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '用户列表')
+  const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  saveAs(new Blob([buf], { type: 'application/octet-stream' }), '用户列表.xlsx')
 }
 
 /* ========== 工具函数 ========== */

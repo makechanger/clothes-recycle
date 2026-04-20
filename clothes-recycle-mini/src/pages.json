@@ -67,6 +67,18 @@
       "style": {
         "navigationBarTitleText": "资质申请"
       }
+    },
+    {
+      "path": "pages/complaint/list/list",
+      "style": {
+        "navigationBarTitleText": "我的申诉"
+      }
+    },
+    {
+      "path": "pages/points/history/history",
+      "style": {
+        "navigationBarTitleText": "积分明细"
+      }
     }
   ],
   "globalStyle": {

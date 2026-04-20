@@ -5,12 +5,15 @@ import com.recycle.common.Result;
 import com.recycle.dto.CompleteWeighingRequest;
 import com.recycle.entity.RecycleOrder;
 import com.recycle.service.CollectorOrderService;
+import com.recycle.service.OrderStatusLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 回收员端控制器
@@ -25,6 +28,7 @@ import java.util.List;
 public class CollectorController {
 
     private final CollectorOrderService collectorOrderService;
+    private final OrderStatusLogService orderStatusLogService;
 
     /**
      * 查看待接单列表
@@ -76,11 +80,15 @@ public class CollectorController {
      * 查看订单详情
      * 回收员查看自己接的某个订单的完整信息，包含归属校验
      */
-    @Operation(summary = "查看订单详情")
+    @Operation(summary = "查看订单详情（含状态时间线）")
     @GetMapping("/order/{id}")
-    public Result<RecycleOrder> orderDetail(@PathVariable Long id) {
+    public Result<Map<String, Object>> orderDetail(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
-        return Result.success(collectorOrderService.getOrderDetail(id, userId));
+        RecycleOrder order = collectorOrderService.getOrderDetail(id, userId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("order", order);
+        result.put("statusLogs", orderStatusLogService.listByOrderId(id));
+        return Result.success(result);
     }
 
     /**

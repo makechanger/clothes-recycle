@@ -15,6 +15,7 @@ import com.recycle.service.ComplaintService;
 import com.recycle.service.PointsRuleService;
 import com.recycle.service.ReviewService;
 import com.recycle.service.RoleApplicationService;
+import com.recycle.service.AdminStatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class AdminController {
     private final AdminUserService adminUserService;
     private final ReviewService reviewService;
     private final ComplaintService complaintService;
+    private final AdminStatisticsService adminStatisticsService;
 
     /**
      * 管理员登录
@@ -298,5 +300,17 @@ public class AdminController {
         Integer refundAmount = params.get("refundAmount") != null ? ((Number) params.get("refundAmount")).intValue() : null;
         complaintService.handleComplaint(id, adminRemark, action, refundAmount);
         return Result.success(null);
+    }
+
+    // ==================== 数据统计 ====================
+
+    /**
+     * 数据统计概览
+     * 返回概览卡片、订单趋势、状态分布、品类分布、回收员排行
+     */
+    @Operation(summary = "数据统计概览")
+    @GetMapping("/statistics")
+    public Result<?> getStatistics() {
+        return Result.success(adminStatisticsService.getStatistics());
     }
 }

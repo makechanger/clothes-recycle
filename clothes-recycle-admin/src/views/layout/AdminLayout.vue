@@ -4,41 +4,50 @@
     <!-- 左侧边栏 -->
     <el-aside width="220px" class="aside">
       <div class="logo">衣物回收后台</div>
-      <el-menu
-        :default-active="currentRoute"
-        router
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
-      >
+      <el-menu :default-active="currentRoute" router background-color="#304156" text-color="#bfcbd9"
+        active-text-color="#409eff">
         <!-- 仪表盘 -->
         <el-menu-item index="/dashboard">
-          <el-icon><DataBoard /></el-icon>
+          <el-icon>
+            <DataBoard />
+          </el-icon>
           <span>仪表盘</span>
         </el-menu-item>
         <el-menu-item index="/orders">
-          <el-icon><List /></el-icon>
+          <el-icon>
+            <List />
+          </el-icon>
           <span>订单管理</span>
         </el-menu-item>
         <el-menu-item index="/collectors">
-          <el-icon><UserFilled /></el-icon>
+          <el-icon>
+            <UserFilled />
+          </el-icon>
           <span>回收员/机构管理</span>
         </el-menu-item>
-        <el-menu-item index="/points-rules">
-          <el-icon><Setting /></el-icon>
-          <span>积分规则</span>
-        </el-menu-item>
         <el-menu-item index="/users">
-          <el-icon><User /></el-icon>
+          <el-icon>
+            <User />
+          </el-icon>
           <span>用户管理</span>
         </el-menu-item>
         <el-menu-item index="/reviews">
-          <el-icon><ChatLineSquare /></el-icon>
+          <el-icon>
+            <ChatLineSquare />
+          </el-icon>
           <span>评价管理</span>
         </el-menu-item>
         <el-menu-item index="/complaints">
-          <el-icon><Warning /></el-icon>
+          <el-icon>
+            <Warning />
+          </el-icon>
           <span>申诉管理</span>
+        </el-menu-item>
+        <el-menu-item index="/points-rules">
+          <el-icon>
+            <Setting />
+          </el-icon>
+          <span>积分规则</span>
         </el-menu-item>
       </el-menu>
     </el-aside>

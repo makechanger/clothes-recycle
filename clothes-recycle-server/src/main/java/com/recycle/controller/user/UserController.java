@@ -10,19 +10,25 @@ import com.recycle.dto.RoleApplicationRequest;
 import com.recycle.dto.UserAddressRequest;
 import com.recycle.entity.RecycleOrder;
 import com.recycle.entity.ServiceReview;
+import com.recycle.entity.User;
 import com.recycle.entity.UserAddress;
 import com.recycle.service.AuthService;
 import com.recycle.service.ComplaintService;
+import com.recycle.service.OrderStatusLogService;
+import com.recycle.service.PointsService;
 import com.recycle.service.RecycleOrderService;
 import com.recycle.service.ReviewService;
 import com.recycle.service.RoleApplicationService;
 import com.recycle.service.UserAddressService;
+import com.recycle.mapper.UserMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户端控制器
@@ -42,6 +48,9 @@ public class UserController {
     private final RecycleOrderService recycleOrderService;
     private final ReviewService reviewService;
     private final ComplaintService complaintService;
+    private final PointsService pointsService;
+    private final OrderStatusLogService orderStatusLogService;
+    private final UserMapper userMapper;
 
     /**
      * 修改密码（所有角色通用）
@@ -180,11 +189,25 @@ public class UserController {
      * 查询订单详情
      * 包含归属校验，只能查看自己的订单
      */
-    @Operation(summary = "查询订单详情")
+    @Operation(summary = "查询订单详情（含状态时间线和回收员信息）")
     @GetMapping("/order/{id}")
-    public Result<RecycleOrder> orderDetail(@PathVariable Long id) {
+    public Result<Map<String, Object>> orderDetail(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
-        return Result.success(recycleOrderService.getDetail(id, userId));
+        RecycleOrder order = recycleOrderService.getDetail(id, userId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("order", order);
+        result.put("statusLogs", orderStatusLogService.listByOrderId(id));
+        // 已接单时补充回收员姓名和手机号
+        if (order.getCollectorId() != null) {
+            User collector = userMapper.selectById(order.getCollectorId());
+            if (collector != null) {
+                Map<String, Object> collectorInfo = new HashMap<>();
+                collectorInfo.put("name", collector.getName());
+                collectorInfo.put("phone", collector.getPhone());
+                result.put("collectorInfo", collectorInfo);
+            }
+        }
+        return Result.success(result);
     }
 
     /**
@@ -255,5 +278,14 @@ public class UserController {
     public Result<?> complaintList() {
         Long userId = StpUtil.getLoginIdAsLong();
         return Result.success(complaintService.getMyComplaints(userId));
+    }
+
+    // ==================== 积分接口 ====================
+
+    @Operation(summary = "积分流水明细")
+    @GetMapping("/points/history")
+    public Result<?> pointsHistory() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(pointsService.getPointsHistory(userId));
     }
 }
