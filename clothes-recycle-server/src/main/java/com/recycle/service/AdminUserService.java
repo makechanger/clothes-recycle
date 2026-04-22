@@ -1,5 +1,6 @@
 package com.recycle.service;
 
+import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -30,6 +31,40 @@ public class AdminUserService {
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final RoleApplicationMapper roleApplicationMapper;
     private final PointsTransactionMapper pointsTransactionMapper;
+
+    /**
+     * 管理员新建用户
+     * 创建角色为 USER、状态为正常的用户
+     */
+    public void createUser(String phone, String password, String name) {
+        if (phone == null || !phone.matches("^1\\d{10}$")) {
+            throw new BusinessException(400, "手机号格式不正确");
+        }
+        if (password == null || password.length() < 6) {
+            throw new BusinessException(400, "密码至少需要6位");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new BusinessException(400, "姓名不能为空");
+        }
+
+        User existUser = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getPhone, phone)
+        );
+        if (existUser != null) {
+            throw new BusinessException(400, "该手机号已注册");
+        }
+
+        User newUser = new User();
+        newUser.setPhone(phone);
+        newUser.setPasswordHash(BCrypt.hashpw(password));
+        newUser.setName(name.trim());
+        newUser.setRole("USER");
+        newUser.setStatus(1);
+        newUser.setPointsBalance(0);
+        userMapper.insert(newUser);
+
+        log.info("管理员新建用户：phone={}, name={}", phone, name.trim());
+    }
 
     /**
      * 分页查询用户列表
@@ -82,7 +117,7 @@ public class AdminUserService {
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
         }
-        user.setPasswordHash("123456");
+        user.setPasswordHash(BCrypt.hashpw("123456"));
         userMapper.updateById(user);
         log.info("管理员重置用户 {} 的密码", userId);
     }

@@ -1,11 +1,11 @@
 package com.recycle.controller.admin;
 
 import cn.dev33.satoken.stp.StpLogic;
+import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.recycle.common.BusinessException;
 import com.recycle.common.Result;
 import com.recycle.dto.AdminLoginRequest;
-import com.recycle.dto.CreateCollectorRequest;
 import com.recycle.entity.Admin;
 import com.recycle.mapper.AdminMapper;
 import com.recycle.service.AdminCollectorService;
@@ -16,6 +16,7 @@ import com.recycle.service.PointsRuleService;
 import com.recycle.service.ReviewService;
 import com.recycle.service.RoleApplicationService;
 import com.recycle.service.AdminStatisticsService;
+import com.recycle.service.AdminManagerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class AdminController {
     private final ReviewService reviewService;
     private final ComplaintService complaintService;
     private final AdminStatisticsService adminStatisticsService;
+    private final AdminManagerService adminManagerService;
 
     /**
      * 管理员登录
@@ -67,7 +69,7 @@ public class AdminController {
         if (admin == null) {
             throw new BusinessException(400, "管理员账号不存在");
         }
-        if (!password.equals(admin.getPasswordHash())) {
+        if (!BCrypt.checkpw(password, admin.getPasswordHash())) {
             throw new BusinessException(400, "密码错误");
         }
         if (admin.getStatus() != 1) {
@@ -136,17 +138,6 @@ public class AdminController {
         return Result.success(adminCollectorService.listCollectors());
     }
 
-    /**
-     * 管理员创建回收员账号
-     * 在 user 表和 collector 表同时创建记录，初始状态为待完善资质
-     */
-    @Operation(summary = "创建回收员")
-    @PostMapping("/collectors/create")
-    public Result<?> createCollector(@RequestBody CreateCollectorRequest request) {
-        adminCollectorService.createCollector(request);
-        return Result.success(null);
-    }
-
     // ==================== 订单管理 ====================
 
     /**
@@ -198,6 +189,19 @@ public class AdminController {
     }
 
     // ==================== 用户管理 ====================
+
+    /**
+     * 管理员新建用户
+     */
+    @Operation(summary = "新建用户")
+    @PostMapping("/users/create")
+    public Result<?> createUser(@RequestBody Map<String, String> params) {
+        String phone = params.get("phone");
+        String password = params.get("password");
+        String name = params.get("name");
+        adminUserService.createUser(phone, password, name);
+        return Result.success(null);
+    }
 
     /**
      * 分页查询用户列表
@@ -312,5 +316,95 @@ public class AdminController {
     @GetMapping("/statistics")
     public Result<?> getStatistics() {
         return Result.success(adminStatisticsService.getStatistics());
+    }
+
+    // ==================== 管理员管理（仅超级管理员可操作） ====================
+
+    /**
+     * 校验当前登录管理员是否为超级管理员
+     */
+    private void checkSuperAdmin() {
+        StpLogic adminStpLogic = new StpLogic("admin");
+        Long currentAdminId = Long.parseLong(adminStpLogic.getLoginId().toString());
+        Admin currentAdmin = adminMapper.selectById(currentAdminId);
+        if (currentAdmin == null || !"admin".equals(currentAdmin.getRole())) {
+            throw new BusinessException(403, "无权限，仅超级管理员可操作");
+        }
+    }
+
+    /**
+     * 分页查询管理员列表
+     */
+    @Operation(summary = "管理员列表（分页）")
+    @GetMapping("/admins")
+    public Result<?> listAdmins(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        checkSuperAdmin();
+        return Result.success(adminManagerService.listAdmins(keyword, page, size));
+    }
+
+    /**
+     * 新增管理员
+     */
+    @Operation(summary = "新增管理员")
+    @PostMapping("/admins/create")
+    public Result<?> createAdmin(@RequestBody Map<String, String> params) {
+        checkSuperAdmin();
+        String username = params.get("username");
+        String password = params.get("password");
+        String role = params.get("role");
+        adminManagerService.createAdmin(username, password, role);
+        return Result.success(null);
+    }
+
+    /**
+     * 启用/禁用管理员
+     */
+    @Operation(summary = "启用/禁用管理员")
+    @PutMapping("/admins/{id}/status")
+    public Result<?> toggleAdminStatus(@PathVariable Long id, @RequestBody Map<String, Object> params) {
+        checkSuperAdmin();
+        Integer status = params.get("status") != null ? ((Number) params.get("status")).intValue() : null;
+        if (status == null) {
+            throw new BusinessException(400, "status 参数不能为空");
+        }
+        // 不允许禁用自己
+        StpLogic adminStpLogic = new StpLogic("admin");
+        Long currentAdminId = Long.parseLong(adminStpLogic.getLoginId().toString());
+        if (currentAdminId.equals(id)) {
+            throw new BusinessException(400, "不能禁用自己的账号");
+        }
+        adminManagerService.toggleStatus(id, status);
+        return Result.success(null);
+    }
+
+    /**
+     * 重置管理员密码为默认值 admin123
+     */
+    @Operation(summary = "重置管理员密码")
+    @PostMapping("/admins/{id}/reset-password")
+    public Result<?> resetAdminPassword(@PathVariable Long id) {
+        checkSuperAdmin();
+        adminManagerService.resetPassword(id);
+        return Result.success(null);
+    }
+
+    /**
+     * 删除管理员
+     */
+    @Operation(summary = "删除管理员")
+    @DeleteMapping("/admins/{id}")
+    public Result<?> deleteAdmin(@PathVariable Long id) {
+        checkSuperAdmin();
+        // 不允许删除自己
+        StpLogic adminStpLogic = new StpLogic("admin");
+        Long currentAdminId = Long.parseLong(adminStpLogic.getLoginId().toString());
+        if (currentAdminId.equals(id)) {
+            throw new BusinessException(400, "不能删除自己的账号");
+        }
+        adminManagerService.deleteAdmin(id);
+        return Result.success(null);
     }
 }

@@ -31,7 +31,8 @@
       </el-select>
       <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="handleReset">重置</el-button>
-      <el-button type="success" @click="handleExport">导出 Excel</el-button>
+      <el-button type="success" @click="showCreateDialog = true">新建用户</el-button>
+      <el-button @click="handleExport">导出 Excel</el-button>
     </div>
 
     <!-- 用户表格 -->
@@ -109,13 +110,32 @@
         <el-button type="primary" :loading="changingRole" @click="handleChangeRole">确认修改</el-button>
       </template>
     </el-dialog>
+
+    <!-- 新建用户弹窗 -->
+    <el-dialog v-model="showCreateDialog" title="新建用户" width="450px" @close="resetCreateForm">
+      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="80px">
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="createForm.phone" placeholder="请输入11位手机号" maxlength="11" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="createForm.password" type="password" placeholder="请输入密码（至少6位）" show-password />
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="createForm.name" placeholder="请输入用户姓名" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="handleCreateUser">确认创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUsers, toggleUserStatus, resetUserPassword, changeUserRole, deleteUser } from '../../api/user'
+import { getUsers, createUser, toggleUserStatus, resetUserPassword, changeUserRole, deleteUser } from '../../api/user'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 
@@ -131,6 +151,29 @@ const showRoleDialog = ref(false)
 const currentUser = ref(null)
 const newRole = ref('')
 const changingRole = ref(false)
+
+// 新建用户弹窗
+const showCreateDialog = ref(false)
+const createFormRef = ref(null)
+const creating = ref(false)
+const createForm = reactive({
+  phone: '',
+  password: '',
+  name: ''
+})
+const createRules = {
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1\d{10}$/, message: '手机号格式不正确', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码至少6位', trigger: 'blur' }
+  ],
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' }
+  ]
+}
 
 /* ========== 数据加载 ========== */
 
@@ -162,6 +205,36 @@ function handleReset() {
   filters.status = null
   pagination.page = 1
   loadUsers()
+}
+
+/* ========== 新建用户 ========== */
+
+async function handleCreateUser() {
+  const valid = await createFormRef.value.validate().catch(() => false)
+  if (!valid) return
+
+  creating.value = true
+  try {
+    await createUser({
+      phone: createForm.phone,
+      password: createForm.password,
+      name: createForm.name
+    })
+    ElMessage.success('用户创建成功')
+    showCreateDialog.value = false
+    resetCreateForm()
+    loadUsers()
+  } catch (e) {
+    // 错误由 request.js 统一处理
+  } finally {
+    creating.value = false
+  }
+}
+
+function resetCreateForm() {
+  createForm.phone = ''
+  createForm.password = ''
+  createForm.name = ''
 }
 
 /* ========== 启用/禁用 ========== */

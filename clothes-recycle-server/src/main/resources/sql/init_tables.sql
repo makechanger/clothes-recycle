@@ -146,6 +146,6 @@ INSERT INTO `community` (`name`, `province`, `city`, `district`) VALUES
 ('和平新村',     '江苏省', '南京市', '鼓楼区');
 
 -- 插入默认管理员（用户名: admin, 密码: admin123）
--- 注意：密码暂时明文存储，后续在 Service 层会使用 Hutool BCrypt 加密验证
+-- 密码使用 BCrypt 加密存储
 INSERT INTO `admin` (`username`, `password_hash`, `role`, `status`) VALUES
-('admin', 'admin123', 'admin', 1);
+('admin', '$2a$10$K0rG.TncSNaJzHi8zA3JF.Xpgs/MwM6DppD2Ml8oI6Q6R8mQ7yvgy', 'admin', 1);

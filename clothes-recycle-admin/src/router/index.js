@@ -19,10 +19,22 @@ const routes = [
         meta: { title: '仪表盘' }
       },
       {
+        path: 'users',
+        name: 'Users',
+        component: () => import('../views/user/UserView.vue'),
+        meta: { title: '用户管理' }
+      },
+      {
         path: 'collectors',
         name: 'Collectors',
         component: () => import('../views/collector/CollectorView.vue'),
         meta: { title: '回收员管理' }
+      },
+      {
+        path: 'admins',
+        name: 'Admins',
+        component: () => import('../views/admin/AdminManagerView.vue'),
+        meta: { title: '管理员管理', requiresSuperAdmin: true }
       },
       {
         path: 'orders',
@@ -35,12 +47,6 @@ const routes = [
         name: 'PointsRules',
         component: () => import('../views/points/PointsRuleView.vue'),
         meta: { title: '积分规则' }
-      },
-      {
-        path: 'users',
-        name: 'Users',
-        component: () => import('../views/user/UserView.vue'),
-        meta: { title: '用户管理' }
       },
       {
         path: 'reviews',
@@ -63,20 +69,20 @@ const router = createRouter({
   routes
 })
 
-// 导航守卫：未登录时拦截到登录页
+// 导航守卫：未登录时拦截到登录页，operator 不能访问管理员管理
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('admin_token')
   if (to.meta.requiresAuth === false) {
-    // 登录页：已登录则跳转仪表盘
     if (token) {
       next('/dashboard')
     } else {
       next()
     }
   } else {
-    // 需要登录的页面：未登录则跳转登录页
     if (!token) {
       next('/login')
+    } else if (to.meta.requiresSuperAdmin && localStorage.getItem('admin_role') !== 'admin') {
+      next('/dashboard')
     } else {
       next()
     }

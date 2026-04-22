@@ -47,11 +47,11 @@ CREATE TABLE `institution` (
 
 -- 插入回收员测试用户到 user 表
 INSERT INTO `user` (phone, password_hash, name, `role`, status) VALUES
-('13800000002', '123456', '测试回收员', 'COLLECTOR', 1);
+('13800000002', '$2a$10$GxV/zz1Bx1Amn.LUGa2usu2FbFMTDni7EO6O4NKhGOJP8wpNIjOB.', '测试回收员', 'COLLECTOR', 1);
 
 -- 插入机构测试用户到 user 表
 INSERT INTO `user` (phone, password_hash, name, `role`, status) VALUES
-('13800000003', '123456', '测试机构', 'INSTITUTION', 1);
+('13800000003', '$2a$10$GxV/zz1Bx1Amn.LUGa2usu2FbFMTDni7EO6O4NKhGOJP8wpNIjOB.', '测试机构', 'INSTITUTION', 1);
 
 -- 为回收员创建扩展信息记录
 INSERT INTO `collector` (user_id, name, status)

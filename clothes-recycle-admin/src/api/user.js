@@ -9,6 +9,11 @@ export function getUsers(params) {
   return request.get('/api/admin/users', { params })
 }
 
+/** 管理员新建用户 */
+export function createUser(data) {
+  return request.post('/api/admin/users/create', data)
+}
+
 /** 启用/禁用用户 */
 export function toggleUserStatus(id, status) {
   return request.put(`/api/admin/users/${id}/status`, { status })

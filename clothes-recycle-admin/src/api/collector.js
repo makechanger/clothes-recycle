@@ -1,17 +1,12 @@
 /**
  * 回收员管理 API 模块
- * 提供回收员列表、创建回收员、资质申请审批等接口调用
+ * 提供回收员列表、资质申请审批等接口调用
  */
 import request from '../utils/request'
 
 /** 获取回收员列表 */
 export function getCollectors() {
   return request.get('/api/admin/collectors')
-}
-
-/** 管理员创建回收员账号 */
-export function createCollector(data) {
-  return request.post('/api/admin/collectors/create', data)
 }
 
 /** 获取待审核的资质申请列表 */

@@ -4,14 +4,6 @@
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <!-- Tab 1：回收员列表 -->
       <el-tab-pane label="回收员列表" name="list">
-        <!-- 顶部操作栏 -->
-        <div class="toolbar">
-          <el-button type="primary" @click="showCreateDialog = true">
-            <el-icon><Plus /></el-icon>
-            创建回收员
-          </el-button>
-        </div>
-
         <!-- 回收员表格 -->
         <el-table :data="collectors" v-loading="loadingCollectors" stripe>
           <el-table-column prop="phone" label="手机号" min-width="140" />
@@ -120,25 +112,6 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 创建回收员弹窗 -->
-    <el-dialog v-model="showCreateDialog" title="创建回收员" width="450px" @close="resetCreateForm">
-      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="80px">
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="createForm.phone" placeholder="请输入11位手机号" maxlength="11" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="createForm.password" type="password" placeholder="请输入密码（至少6位）" show-password />
-        </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="createForm.name" placeholder="请输入回收员姓名" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" :loading="creating" @click="handleCreate">确认创建</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 拒绝原因弹窗 -->
     <el-dialog v-model="showRejectDialog" title="拒绝申请" width="400px">
       <el-input
@@ -156,11 +129,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getCollectors,
-  createCollector,
   getPendingApplications,
   getProcessedApplications,
   approveApplication,
@@ -182,29 +154,6 @@ const loadingApplications = ref(false)
 // 审批记录
 const processedApplications = ref([])
 const loadingProcessed = ref(false)
-
-// 创建回收员弹窗
-const showCreateDialog = ref(false)
-const createFormRef = ref(null)
-const creating = ref(false)
-const createForm = reactive({
-  phone: '',
-  password: '',
-  name: ''
-})
-const createRules = {
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1\d{10}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6位', trigger: 'blur' }
-  ],
-  name: [
-    { required: true, message: '请输入姓名', trigger: 'blur' }
-  ]
-}
 
 // 拒绝弹窗
 const showRejectDialog = ref(false)
@@ -259,38 +208,6 @@ function handleTabChange(tab) {
   } else if (tab === 'history') {
     loadProcessedApplications()
   }
-}
-
-/* ========== 创建回收员 ========== */
-
-/** 提交创建回收员 */
-async function handleCreate() {
-  const valid = await createFormRef.value.validate().catch(() => false)
-  if (!valid) return
-
-  creating.value = true
-  try {
-    await createCollector({
-      phone: createForm.phone,
-      password: createForm.password,
-      name: createForm.name
-    })
-    ElMessage.success('回收员创建成功')
-    showCreateDialog.value = false
-    resetCreateForm()
-    loadCollectors()
-  } catch (e) {
-    // 错误由 request.js 统一处理
-  } finally {
-    creating.value = false
-  }
-}
-
-/** 重置创建表单 */
-function resetCreateForm() {
-  createForm.phone = ''
-  createForm.password = ''
-  createForm.name = ''
 }
 
 /* ========== 审批操作 ========== */
@@ -369,9 +286,5 @@ onMounted(() => {
 <style scoped>
 .collector-page {
   padding: 0;
-}
-
-.toolbar {
-  margin-bottom: 16px;
 }
 </style>

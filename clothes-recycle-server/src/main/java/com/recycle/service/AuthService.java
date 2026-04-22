@@ -13,6 +13,7 @@ import com.recycle.entity.User;
 import com.recycle.mapper.CollectorMapper;
 import com.recycle.mapper.InstitutionMapper;
 import com.recycle.mapper.UserMapper;
+import cn.hutool.crypto.digest.BCrypt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -55,8 +56,8 @@ public class AuthService {
             throw new BusinessException(400, "手机号未注册");
         }
 
-        // 2. 验证密码
-        if (!password.equals(user.getPasswordHash())) {
+        // 2. 验证密码（BCrypt）
+        if (!BCrypt.checkpw(password, user.getPasswordHash())) {
             throw new BusinessException(400, "密码错误");
         }
 
@@ -110,7 +111,7 @@ public class AuthService {
         // 4. 插入 user 表，默认角色为 USER
         User newUser = new User();
         newUser.setPhone(phone);
-        newUser.setPasswordHash(password);  // 暂用明文，后续升级为 BCrypt
+        newUser.setPasswordHash(BCrypt.hashpw(password));
         newUser.setName(name);
         newUser.setRole("USER");  // 默认普通用户角色
         newUser.setStatus(1);     // 正常状态
@@ -140,13 +141,13 @@ public class AuthService {
             throw new BusinessException(400, "用户不存在");
         }
 
-        // 3. 验证旧密码
-        if (!request.getOldPassword().equals(user.getPasswordHash())) {
+        // 3. 验证旧密码（BCrypt）
+        if (!BCrypt.checkpw(request.getOldPassword(), user.getPasswordHash())) {
             throw new BusinessException(400, "旧密码错误");
         }
 
-        // 4. 更新密码
-        user.setPasswordHash(request.getNewPassword());
+        // 4. 更新密码（BCrypt 加密）
+        user.setPasswordHash(BCrypt.hashpw(request.getNewPassword()));
         userMapper.updateById(user);
         log.info("用户 {} 修改密码成功", userId);
     }

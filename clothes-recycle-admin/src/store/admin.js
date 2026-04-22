@@ -13,6 +13,9 @@ export const useAdminStore = defineStore('admin', () => {
   // 是否已登录
   const isLoggedIn = computed(() => !!token.value)
 
+  // 是否为超级管理员
+  const isSuperAdmin = computed(() => role.value === 'admin')
+
   // 管理员登录
   async function login(usernameInput, password) {
     const data = await request.post('/api/admin/login', {
@@ -40,5 +43,5 @@ export const useAdminStore = defineStore('admin', () => {
     router.push('/login')
   }
 
-  return { token, username, role, isLoggedIn, login, logout }
+  return { token, username, role, isLoggedIn, isSuperAdmin, login, logout }
 })

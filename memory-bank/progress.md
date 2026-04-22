@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：第 4 周功能补全进行中 — Step 4.3/4.4/4.5/4.7/4.11 ✅ 完成，Step 4.8/4.9/4.12 待开发
+## 当前状态：第 4 周功能补全进行中 — Step 4.3/4.4/4.5/4.7/4.11/管理员管理/权限控制/密码加密 ✅ 完成，Step 4.8/4.9/4.12 待开发
 
 ---
 
@@ -555,6 +555,72 @@
 - `OrderView.vue`：筛选栏新增"导出 Excel"按钮，导出当前页订单数据（订单号、用户、分类、重量、状态、积分、时间）
 - `UserView.vue`：筛选栏新增"导出 Excel"按钮，导出当前页用户数据（ID、手机号、姓名、角色、积分、状态、注册时间）
 - 纯前端导出，无需后端改动
+
+---
+
+### 管理员管理模块 — ✅ 2026-04-21 完成
+
+**完成内容：**
+
+**后端新增文件：**
+- `service/AdminManagerService.java`：管理员管理服务（分页列表、新增、启用/禁用、重置密码、删除）
+
+**后端修改文件：**
+- `controller/admin/AdminController.java`：新增 5 个管理员管理端点（GET /admins, POST /admins/create, PUT /admins/{id}/status, POST /admins/{id}/reset-password, DELETE /admins/{id}），含自我保护（不能禁用/删除自己）
+
+**管理后台新增文件：**
+- `api/adminManager.js`：管理员管理 API 模块
+- `views/admin/AdminManagerView.vue`：管理员管理页面（关键词搜索 + 分页表格 + 新增弹窗 + 启用禁用 + 重置密码 + 删除）
+
+**管理后台修改文件：**
+- `router/index.js`：添加 /admins 路由
+- `views/layout/AdminLayout.vue`：侧边栏新增"管理员管理"菜单项（Key 图标）
+
+---
+
+### 创建回收员改为新建用户 + operator 权限控制 — ✅ 2026-04-22 完成
+
+**完成内容：**
+
+**功能变更：**
+- 删除管理后台"创建回收员"功能，替换为"新建用户"功能（创建普通用户 USER）
+- 新增 operator（运营）与 admin（超级管理员）权限区分：operator 不能访问管理员管理模块
+
+**后端修改文件：**
+- `controller/admin/AdminController.java`：删除 POST /collectors/create 端点，新增 POST /users/create 端点；管理员管理端点（/admins/**）添加 `checkSuperAdmin()` 权限校验，operator 调用返回 403
+- `service/AdminUserService.java`：新增 `createUser()` 方法
+- `service/AdminCollectorService.java`：删除 `createCollector()` 方法
+- `dto/CreateCollectorRequest.java`：已删除
+
+**管理后台修改文件：**
+- `store/admin.js`：新增 `isSuperAdmin` 计算属性
+- `views/layout/AdminLayout.vue`：管理员管理菜单项添加 `v-if="adminStore.isSuperAdmin"` 条件渲染
+- `router/index.js`：admins 路由添加 `meta.requiresSuperAdmin`，路由守卫拦截 operator 访问
+- `views/collector/CollectorView.vue`：删除创建回收员相关代码
+- `views/user/UserView.vue`：新增"新建用户"按钮和弹窗
+- `api/collector.js`：删除 `createCollector()` 函数
+- `api/user.js`：新增 `createUser()` 函数
+
+---
+
+### 密码 BCrypt 加密 — ✅ 2026-04-22 完成
+
+**完成内容：**
+
+全部密码存储和校验从明文改为 Hutool BCrypt 加密（`cn.hutool.crypto.digest.BCrypt`）。
+
+**后端修改文件：**
+- `service/AuthService.java`：注册 `BCrypt.hashpw()`、登录 `BCrypt.checkpw()`、改密码 `checkpw()` + `hashpw()`
+- `controller/admin/AdminController.java`：管理员登录 `BCrypt.checkpw()`
+- `service/AdminUserService.java`：创建用户 `BCrypt.hashpw()`、重置密码 `BCrypt.hashpw("123456")`
+- `service/AdminManagerService.java`：创建管理员 `BCrypt.hashpw()`、重置密码 `BCrypt.hashpw("admin123")`
+
+**SQL 文件更新：**
+- `init_tables.sql`：管理员测试数据密码改为 BCrypt 密文
+- `step1_5_auth.sql`：用户/回收员/机构测试数据密码改为 BCrypt 密文
+- `step2_refactor_role.sql`：迁移测试数据密码改为 BCrypt 密文
+
+**注意：** 数据库中已有的明文密码需手动执行 UPDATE 语句更新为 BCrypt 密文。
 
 ---
 

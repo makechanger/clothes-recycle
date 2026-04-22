@@ -71,12 +71,12 @@ CREATE TABLE IF NOT EXISTS `institution` (
 
 -- 测试用户（手机号: 13800000001, 密码: 123456）
 INSERT INTO `user` (`phone`, `password_hash`, `name`, `status`) VALUES
-('13800000001', '123456', '测试用户', 1);
+('13800000001', '$2a$10$GxV/zz1Bx1Amn.LUGa2usu2FbFMTDni7EO6O4NKhGOJP8wpNIjOB.', '测试用户', 1);
 
 -- 测试回收员（手机号: 13800000002, 密码: 123456, 状态: 已认证）
 INSERT INTO `collector` (`phone`, `password_hash`, `name`, `status`) VALUES
-('13800000002', '123456', '测试回收员', 2);
+('13800000002', '$2a$10$GxV/zz1Bx1Amn.LUGa2usu2FbFMTDni7EO6O4NKhGOJP8wpNIjOB.', '测试回收员', 2);
 
 -- 测试机构（手机号: 13800000003, 密码: 123456）
 INSERT INTO `institution` (`phone`, `password_hash`, `name`, `address`, `contact_person`, `status`) VALUES
-('13800000003', '123456', '绿色环保回收站', '广州市天河区天河路100号', '张经理', 1);
+('13800000003', '$2a$10$GxV/zz1Bx1Amn.LUGa2usu2FbFMTDni7EO6O4NKhGOJP8wpNIjOB.', '绿色环保回收站', '广州市天河区天河路100号', '张经理', 1);

@@ -19,17 +19,23 @@
           </el-icon>
           <span>订单管理</span>
         </el-menu-item>
+        <el-menu-item index="/users">
+          <el-icon>
+            <User />
+          </el-icon>
+          <span>用户管理</span>
+        </el-menu-item>
         <el-menu-item index="/collectors">
           <el-icon>
             <UserFilled />
           </el-icon>
           <span>回收员/机构管理</span>
         </el-menu-item>
-        <el-menu-item index="/users">
+        <el-menu-item v-if="adminStore.isSuperAdmin" index="/admins">
           <el-icon>
-            <User />
+            <Key />
           </el-icon>
-          <span>用户管理</span>
+          <span>管理员管理</span>
         </el-menu-item>
         <el-menu-item index="/reviews">
           <el-icon>
@@ -49,6 +55,7 @@
           </el-icon>
           <span>积分规则</span>
         </el-menu-item>
+
       </el-menu>
     </el-aside>
 
@@ -73,7 +80,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataBoard, List, UserFilled, Setting, User, ChatLineSquare, Warning } from '@element-plus/icons-vue'
+import { DataBoard, List, UserFilled, Setting, User, ChatLineSquare, Warning, Key } from '@element-plus/icons-vue'
 import { useAdminStore } from '../../store/admin'
 
 const route = useRoute()

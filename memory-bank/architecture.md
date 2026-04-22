@@ -1,6 +1,6 @@
 # 项目架构
 
-> 最后更新：2026-04-18（Step 4.2 评价与申诉完成后）
+> 最后更新：2026-04-22（管理员管理 + 权限控制 + BCrypt 加密完成后）
 
 ## 技术架构总览
 
@@ -82,8 +82,9 @@ clothes-recycle-server/
     │   │   ├── ReviewService.java           # 服务评价（提交/查询）
     │   │   ├── ComplaintService.java        # 申诉（提交/查询/管理员处理3种动作）
     │   │   ├── AdminOrderService.java       # 管理员订单查询（分页+详情）
-    │   │   ├── AdminCollectorService.java   # 管理员回收员管理（创建/审批）
-    │   │   └── AdminUserService.java        # 管理员用户管理（列表/状态/密码/角色）
+    │   │   ├── AdminCollectorService.java   # 管理员回收员管理（审批）
+    │   │   ├── AdminUserService.java        # 管理员用户管理（列表/状态/密码/角色/新建用户）
+    │   │   └── AdminManagerService.java     # 管理员账号管理（列表/新增/禁用/重置密码/删除）
     │   ├── mapper/
     │   │   ├── UserMapper.java
     │   │   ├── CollectorMapper.java
@@ -123,7 +124,7 @@ clothes-recycle-server/
     │   │   ├── CreateOrderRequest.java  # 创建订单请求
     │   │   ├── CompleteWeighingRequest.java  # 称重完成请求
     │   │   ├── ScanReceiveRequest.java  # 机构扫码接收请求
-    │   │   ├── CreateCollectorRequest.java  # 管理员创建回收员请求
+    │   │   ├── CreateCollectorRequest.java  # （已删除，创建回收员功能已移除）
     │   │   ├── CollectorVO.java         # 回收员视图对象
     │   │   ├── ReviewRequest.java       # 评价请求（orderId, 三维度评分, content）
     │   │   └── ComplaintRequest.java    # 申诉请求（orderId, type, description）
@@ -154,22 +155,24 @@ clothes-recycle-admin/
     ├── utils/
     │   └── request.js               # Axios 封装（token 注入、Result<T> 解包、401 跳转）
     ├── store/
-    │   └── admin.js                 # Pinia 管理员状态（login/logout + localStorage）
+    │   └── admin.js                 # Pinia 管理员状态（login/logout + localStorage + isSuperAdmin）
     ├── router/
-    │   └── index.js                 # Vue Router（导航守卫 + 路由配置）
+    │   └── index.js                 # Vue Router（导航守卫 + 路由配置 + operator 权限拦截）
     ├── api/
     │   ├── collector.js             # 回收员管理 API
     │   ├── order.js                 # 订单管理 API
     │   ├── pointsRule.js            # 积分规则 API
-    │   ├── user.js                  # 用户管理 API
+    │   ├── user.js                  # 用户管理 API（含新建用户）
     │   ├── review.js                # 评价管理 API
-    │   └── complaint.js             # 申诉管理 API
+    │   ├── complaint.js             # 申诉管理 API
+    │   ├── statistics.js            # 数据统计 API
+    │   └── adminManager.js          # 管理员管理 API
     └── views/
         ├── login/
         │   └── LoginView.vue        # 登录页（Element Plus 表单，渐变背景）
         ├── layout/
-        │   ├── AdminLayout.vue      # 后台骨架（侧边栏+顶栏+内容区）
-        │   └── DashboardView.vue    # 仪表盘占位页（待 Step 4.4 改造为 ECharts 看板）
+        │   ├── AdminLayout.vue      # 后台骨架（侧边栏+顶栏+内容区，管理员管理菜单仅超级管理员可见）
+        │   └── DashboardView.vue    # 数据统计看板（ECharts 4 图表 + 概览卡片）
         ├── collector/
         │   └── CollectorView.vue    # 回收员管理（列表 Tab + 待审核 Tab）
         ├── order/
@@ -182,6 +185,8 @@ clothes-recycle-admin/
         │   └── ReviewView.vue       # 评价管理（星级展示+分页）
         ├── complaint/
         │   └── ComplaintView.vue    # 申诉管理（状态筛选+处理弹窗，3种动作）
+        ├── admin/
+        │   └── AdminManagerView.vue # 管理员管理（列表+新增+禁用+重置密码+删除，仅超级管理员）
         └── components/
             └── OrderDetailDialog.vue # 订单详情弹窗组件（复用于订单/评价/申诉页）
 ```
@@ -220,7 +225,7 @@ clothes-recycle-mini/
     ├── App.vue                      # 应用入口
     ├── main.js                      # 初始化 Pinia
     ├── manifest.json                # 小程序配置
-    ├── pages.json                   # 路由配置（11 个页面）
+    ├── pages.json                   # 路由配置（14 个页面）
     ├── components/
     │   └── custom-tabbar/           # 自定义底部导航栏（根据角色动态显示）
     ├── pages/
@@ -235,6 +240,10 @@ clothes-recycle-mini/
     │   │   ├── user.vue             # 个人中心页 ✅
     │   │   ├── change-password/     # 修改密码 ✅
     │   │   └── apply-role/          # 资质申请 ✅
+    │   ├── complaint/
+    │   │   └── list/list.vue        # 我的申诉列表 ✅
+    │   ├── points/
+    │   │   └── history/history.vue  # 积分流水明细 ✅
     │   └── address/
     │       ├── list/list.vue        # 地址列表页 ✅
     │       └── edit/edit.vue        # 地址编辑页 ✅
@@ -252,6 +261,8 @@ clothes-recycle-mini/
 | 注册方案 | 统一注册为 USER | 所有角色先注册为普通用户，后续通过资质申请升级角色 |
 | 用户表架构 | **统一用户表 + 扩展表**（方案 B） | user 表永远保留，role 字段标识角色；collector/institution 为扩展信息表通过 user_id 关联。角色升级 = UPDATE user.role + INSERT 扩展记录，不删除 user 数据 |
 | 鉴权方案 | Sa-Token **2 套体系** | StpUtil（所有用户 USER/COLLECTOR/INSTITUTION 共用）+ StpLogic("admin")（管理员独立） |
+| 密码存储 | Hutool BCrypt 加密 | `BCrypt.hashpw()` 存储，`BCrypt.checkpw()` 校验，所有密码均加密存储（用户/管理员） |
+| 权限控制 | admin（超级管理员）+ operator（运营） | 三层保护：前端菜单 v-if 隐藏 + 路由守卫拦截 + 后端 API checkSuperAdmin()；operator 不能访问管理员管理模块 |
 | ORM | MyBatis-Plus | 单表零 SQL，复杂查询手写 XML |
 | 文件存储 | 本地 ./uploads/ | 无需云 OSS，静态资源映射直接访问 |
 | 逻辑删除 | 按需 @TableLogic | 不全局启用，避免干扰不需要的表 |
