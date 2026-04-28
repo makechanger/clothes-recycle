@@ -11,23 +11,23 @@
     <view class="menu-list">
       <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/address/list/list')">
         <text>地址管理</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view class="menu-item" @click="goTo('/pages/user/change-password/change-password')">
         <text>修改密码</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/user/apply-role/apply-role')">
         <text>资质申请</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/complaint/list/list')">
         <text>我的申诉</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view v-if="userStore.isUser" class="menu-item" @click="goTo('/pages/points/history/history')">
         <text>积分明细</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view class="menu-item logout" @click="handleLogout">
         <text>退出登录</text>
@@ -35,7 +35,7 @@
     </view>
 
     <!-- 自定义底部导航 -->
-    <custom-tabbar :current="userStore.isUser ? 3 : (userStore.isCollector ? 2 : 1)" />
+    <custom-tabbar :current="userStore.isUser ? 3 : (userStore.isCollector ? 2 : 3)" />
   </view>
 </template>
 

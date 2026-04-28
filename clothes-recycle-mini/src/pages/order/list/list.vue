@@ -105,7 +105,7 @@
     </view>
 
     <!-- 底部导航栏：机构"接收任务"索引0，回收员"我的任务"索引1，用户"我的订单"索引2 -->
-    <custom-tabbar :current="isInstitution ? 0 : (isCollector ? 1 : 2)" />
+    <custom-tabbar :current="isInstitution ? 1 : (isCollector ? 1 : 2)" />
   </view>
 </template>
 
@@ -152,7 +152,8 @@ const collectorTabs = [
 // 机构端 Tab 配置
 const institutionTabs = [
   { label: '全部', value: null },
-  { label: '已接收', value: 7 }
+  { label: '已接收', value: 7 },
+  { label: '已分配去向', value: 8 }
 ]
 
 // 根据角色返回对应 Tab 配置
@@ -171,7 +172,8 @@ const statusMap = {
   4: '已完成',
   5: '已取消',
   6: '异常',
-  7: '机构已接收'
+  7: '机构已接收',
+  8: '已分配去向'
 }
 
 // 当前选中的 Tab
@@ -307,7 +309,6 @@ function showActions(order) {
  * 跳转订单详情页（机构端不跳转，因为没有机构订单详情接口）
  */
 function goDetail(id) {
-  if (isInstitution.value) return
   uni.navigateTo({ url: `/pages/order/detail/detail?id=${id}` })
 }
 
@@ -510,6 +511,7 @@ function handleComplete(order) {
 .status-5 { color: #9e9e9e; background: #f5f5f5; }
 .status-6 { color: #f44336; background: #ffebee; }
 .status-7 { color: #1565c0; background: #e3f2fd; }
+.status-8 { color: #2e7d32; background: #e8f5e9; }
 
 /* 订单信息 */
 .info-row {

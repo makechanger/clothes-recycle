@@ -12,11 +12,11 @@
         <view class="address-detail-text">
           {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }} {{ selectedAddress.detailAddress }}
         </view>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
       <view v-else class="address-empty" @click="goSelectAddress">
         <text class="empty-hint">请选择上门地址</text>
-        <text class="arrow">></text>
+        <text class="arrow">{{ '>' }}</text>
       </view>
     </view>
 
@@ -30,7 +30,7 @@
           <text :class="['value', { placeholder: !form.appointmentDate }]">
             {{ form.appointmentDate || '请选择日期' }}
           </text>
-          <text class="arrow">></text>
+          <text class="arrow">{{ '>' }}</text>
         </view>
       </picker>
       <!-- 预约时间段 -->
@@ -40,7 +40,7 @@
           <text :class="['value', { placeholder: !timeSlotText }]">
             {{ timeSlotText || '请选择时间段' }}
           </text>
-          <text class="arrow">></text>
+          <text class="arrow">{{ '>' }}</text>
         </view>
       </picker>
     </view>

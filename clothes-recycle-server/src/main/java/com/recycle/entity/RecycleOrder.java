@@ -13,7 +13,7 @@ import java.time.LocalTime;
 /**
  * 回收订单实体类
  * 对应数据库 recycle_order 表，记录从下单到完成的全部信息
- * 状态值：0=待接单, 1=已接单, 2=上门中, 3=待确认(称重完成), 4=已完成(用户确认), 5=已取消, 6=异常, 7=机构已接收
+ * 状态值：0=待接单, 1=已接单, 2=上门中, 3=待确认(称重完成), 4=已完成(用户确认), 5=已取消, 6=异常, 7=机构已接收, 8=已分配去向
  */
 @Data
 @TableName("recycle_order")
@@ -65,7 +65,7 @@ public class RecycleOrder {
     /** 用户备注 */
     private String remark;
 
-    /** 订单状态：0=待接单,1=已接单,2=上门中,3=待确认,4=已完成(用户确认),5=已取消,6=异常,7=机构已接收 */
+    /** 订单状态：0=待接单,1=已接单,2=上门中,3=待确认,4=已完成(用户确认),5=已取消,6=异常,7=机构已接收,8=已分配去向 */
     private Integer status;
 
     /** 溯源二维码图片URL */
@@ -73,6 +73,12 @@ public class RecycleOrder {
 
     /** 本单发放的积分数 */
     private Integer pointsAwarded;
+
+    /** 去向类型：DONATION(捐赠)/RECYCLE(再生利用)/ENVIRONMENTAL(环保处理) */
+    private String destinationType;
+
+    /** 去向描述 */
+    private String destinationDesc;
 
     /** 取消计数日期（用于每日取消上限判断） */
     private LocalDate cancelCountDate;

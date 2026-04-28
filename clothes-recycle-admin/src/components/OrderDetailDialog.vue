@@ -76,12 +76,12 @@ const loading = ref(false)
 const detail = ref(null)
 
 function statusText(status) {
-  const map = { 0: '待接单', 1: '已接单', 2: '上门中', 3: '待确认', 4: '已完成', 5: '已取消', 6: '异常', 7: '机构已接收' }
+  const map = { 0: '待接单', 1: '已接单', 2: '上门中', 3: '待确认', 4: '已完成', 5: '已取消', 6: '异常', 7: '机构已接收', 8: '已分配去向' }
   return map[status] ?? '未知'
 }
 
 function statusTagType(status) {
-  const map = { 0: 'info', 1: '', 2: 'warning', 3: 'warning', 4: 'success', 5: 'info', 6: 'danger', 7: 'success' }
+  const map = { 0: 'info', 1: '', 2: 'warning', 3: 'warning', 4: 'success', 5: 'info', 6: 'danger', 7: 'success', 8: 'success' }
   return map[status] ?? 'info'
 }
 

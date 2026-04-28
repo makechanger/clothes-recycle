@@ -14,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 机构订单服务
@@ -145,8 +147,54 @@ public class InstitutionOrderService {
 
         if (status != null) {
             wrapper.eq(RecycleOrder::getStatus, status);
+        } else {
+            wrapper.in(RecycleOrder::getStatus, 7, 8);
         }
 
         return recycleOrderMapper.selectList(wrapper);
+    }
+
+    /**
+     * 查询机构订单详情
+     * 校验订单归属本机构，返回订单信息 + 状态日志
+     */
+    public Map<String, Object> getOrderDetail(Long userId, Long orderId) {
+        checkInstitutionRole(userId);
+        Institution institution = getInstitutionByUserId(userId);
+
+        RecycleOrder order = recycleOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        if (!institution.getId().equals(order.getInstitutionId())) {
+            throw new BusinessException(403, "无权查看该订单");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("order", order);
+        result.put("statusLogs", orderStatusLogService.listByOrderId(orderId));
+
+        if (order.getDestinationType() != null) {
+            Map<String, Object> destination = new HashMap<>();
+            destination.put("destinationType", getDestinationTypeLabel(order.getDestinationType()));
+            destination.put("destinationDesc", order.getDestinationDesc());
+            destination.put("institutionName", institution.getName());
+            result.put("destination", destination);
+        }
+
+        return result;
+    }
+
+    /**
+     * 去向类型英文转中文
+     */
+    private String getDestinationTypeLabel(String type) {
+        if (type == null) return "";
+        switch (type) {
+            case "DONATION": return "捐赠";
+            case "RECYCLE": return "再生利用";
+            case "ENVIRONMENTAL": return "环保处理";
+            default: return type;
+        }
     }
 }

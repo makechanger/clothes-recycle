@@ -21,7 +21,7 @@
           <text :class="['input', 'picker-text', { placeholder: !regionText }]">
             {{ regionText || '请选择省/市/区' }}
           </text>
-          <text class="arrow">></text>
+          <text class="arrow">{{ '>' }}</text>
         </view>
       </picker>
 

@@ -11,7 +11,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Sa-Token 鉴权拦截器配置
  *
- * 重构后的鉴权策略：
  * - 所有普通用户/回收员/机构统一使用 StpUtil（默认鉴权体系）
  * - 管理员独立使用 StpLogic("admin") 鉴权体系
  * - /api/user/**、/api/collector/**、/api/institution/** 都用 StpUtil.checkLogin()

@@ -49,10 +49,15 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="提交时间" width="170" />
+      <el-table-column prop="createdAt" label="提交时间" width="170">
+        <template #default="{ row }">
+          {{ row.createdAt ? row.createdAt.replace('T', ' ') : '-' }}
+        </template>
+      </el-table-column>
+
       <el-table-column prop="handledAt" label="处理时间" width="170">
         <template #default="{ row }">
-          {{ row.handledAt || '-' }}
+          {{ row.handledAt ? row.handledAt.replace('T', ' ') : '-' }}
         </template>
       </el-table-column>
       <el-table-column label="操作" width="100" fixed="right">

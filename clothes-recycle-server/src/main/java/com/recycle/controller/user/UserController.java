@@ -13,6 +13,7 @@ import com.recycle.entity.ServiceReview;
 import com.recycle.entity.User;
 import com.recycle.entity.UserAddress;
 import com.recycle.service.AuthService;
+import com.recycle.service.ClothingDestinationService;
 import com.recycle.service.ComplaintService;
 import com.recycle.service.OrderStatusLogService;
 import com.recycle.service.PointsService;
@@ -48,6 +49,7 @@ public class UserController {
     private final RecycleOrderService recycleOrderService;
     private final ReviewService reviewService;
     private final ComplaintService complaintService;
+    private final ClothingDestinationService clothingDestinationService;
     private final PointsService pointsService;
     private final OrderStatusLogService orderStatusLogService;
     private final UserMapper userMapper;
@@ -206,6 +208,10 @@ public class UserController {
                 collectorInfo.put("phone", collector.getPhone());
                 result.put("collectorInfo", collectorInfo);
             }
+        }
+        // 机构已接收或已分配去向时补充衣物去向信息
+        if (order.getStatus() != null && order.getStatus() >= 7) {
+            result.put("destination", clothingDestinationService.getOrderDestination(id));
         }
         return Result.success(result);
     }

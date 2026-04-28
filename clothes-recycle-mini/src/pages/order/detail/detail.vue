@@ -67,6 +67,23 @@
       </view>
     </view>
 
+    <!-- 衣物去向信息（状态 >= 7 且有去向数据时展示） -->
+    <view v-if="destinationInfo" class="section">
+      <view class="section-title">衣物去向</view>
+      <view class="detail-row">
+        <text class="detail-label">去向类型</text>
+        <text class="detail-value">{{ destinationTypeMap[destinationInfo.destinationType] || destinationInfo.destinationType || '-' }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">去向描述</text>
+        <text class="detail-value">{{ destinationInfo.destinationDesc || '-' }}</text>
+      </view>
+      <view v-if="destinationInfo.institutionName" class="detail-row">
+        <text class="detail-label">处理机构</text>
+        <text class="detail-value">{{ destinationInfo.institutionName }}</text>
+      </view>
+    </view>
+
     <!-- 衣物照片 -->
     <view v-if="photoList.length > 0" class="section">
       <view class="section-title">衣物照片</view>
@@ -91,19 +108,19 @@
       </view>
       <view class="detail-row">
         <text class="detail-label">下单时间</text>
-        <text class="detail-value">{{ order.createdAt }}</text>
+        <text class="detail-value">{{ order.createdAt.replace("T", " ")}}</text>
       </view>
       <view v-if="order.acceptedAt" class="detail-row">
         <text class="detail-label">接单时间</text>
-        <text class="detail-value">{{ order.acceptedAt }}</text>
+        <text class="detail-value">{{ order.acceptedAt.replace("T", " ")}}</text>
       </view>
       <view v-if="order.completedAt" class="detail-row">
         <text class="detail-label">完成时间</text>
-        <text class="detail-value">{{ order.completedAt }}</text>
+        <text class="detail-value">{{ order.completedAt.replace("T", " ")}}</text>
       </view>
       <view v-if="order.cancelledAt" class="detail-row">
         <text class="detail-label">取消时间</text>
-        <text class="detail-value">{{ order.cancelledAt }}</text>
+        <text class="detail-value">{{ order.cancelledAt.replace("T", " ") }}</text>
       </view>
     </view>
 
@@ -123,7 +140,7 @@
           <view class="timeline-content">
             <text class="timeline-title">{{ statusMap[log.toStatus] || '状态变更' }}</text>
             <text v-if="log.remark" class="timeline-remark">{{ log.remark }}</text>
-            <text class="timeline-time">{{ log.createdAt }}</text>
+            <text class="timeline-time">{{ log.createdAt.replace("T", " ")  }}</text>
           </view>
         </view>
       </view>
@@ -145,20 +162,20 @@
           class="action-btn confirm-btn"
           @click="handleConfirm"
         >确认完成</button>
-        <!-- 机构已接收：评价 + 申诉 -->
+        <!-- 机构已接收/已分配去向：评价 + 申诉 -->
         <button
-          v-if="order.status === 7 && !reviewed"
+          v-if="order.status >= 7 && !reviewed"
           class="action-btn confirm-btn"
           @click="showReviewPopup = true"
         >评价</button>
         <button
-          v-if="order.status === 7 && reviewed"
+          v-if="order.status >= 7 && reviewed"
           class="action-btn"
           style="background: #e0e0e0; color: #999;"
           disabled
         >已评价</button>
         <button
-          v-if="order.status === 7"
+          v-if="order.status >= 7"
           class="action-btn pickup-btn"
           @click="showComplaintPopup = true"
         >申诉</button>
@@ -308,7 +325,8 @@ const statusMap = {
   4: '已完成',
   5: '已取消',
   6: '异常',
-  7: '机构已接收'
+  7: '机构已接收',
+  8: '已分配去向'
 }
 
 // 用户视角的状态描述
@@ -319,7 +337,9 @@ const userStatusDesc = {
   3: '回收员已完成称重，请确认重量',
   4: '订单已完成，积分已发放',
   5: '订单已取消',
-  6: '订单出现异常，请联系客服'
+  6: '订单出现异常，请联系客服',
+  7: '机构已接收，积分已发放',
+  8: '衣物去向已分配'
 }
 
 // 回收员视角的状态描述
@@ -330,13 +350,16 @@ const collectorStatusDesc = {
   3: '已完成称重，等待用户确认',
   4: '订单已完成',
   5: '订单已取消',
-  6: '订单出现异常'
+  6: '订单出现异常',
+  7: '已完成接收',
+  8: '已分配去向'
 }
 
 // 机构视角的状态描述
 const institutionStatusDesc = {
   4: '用户已确认，等待扫码接收',
-  7: '已完成接收，积分已发放'
+  7: '已完成接收，积分已发放',
+  8: '已分配去向'
 }
 
 // 根据角色返回对应的状态描述
@@ -368,6 +391,14 @@ const statusLogs = ref([])
 
 // 回收员信息
 const collectorInfo = ref(null)
+
+// 衣物去向信息
+const destinationInfo = ref(null)
+const destinationTypeMap = {
+  DONATION: '捐赠',
+  RECYCLE: '再生利用',
+  ENVIRONMENTAL: '环保处理'
+}
 
 // ==================== 评价/申诉相关 ====================
 
@@ -405,8 +436,8 @@ const showActions = computed(() => {
     // 回收员：待接单(0)可接单，已接单(1)可上门，上门中(2)可称重
     return order.value.status === 0 || order.value.status === 1 || order.value.status === 2
   }
-  // 用户：待接单/已接单(0/1)可取消，待确认(3)可确认，机构已接收(7)可评价/申诉
-  return order.value.status === 0 || order.value.status === 1 || order.value.status === 3 || order.value.status === 7
+  // 用户：待接单/已接单(0/1)可取消，待确认(3)可确认，机构已接收(7)/已分配去向(8)可评价/申诉
+  return order.value.status === 0 || order.value.status === 1 || order.value.status === 3 || order.value.status >= 7
 })
 
 // ==================== 页面加载 ====================
@@ -424,10 +455,12 @@ onLoad((options) => {
  */
 async function loadOrderDetail(id) {
   try {
-    // 回收员调用回收员接口，用户调用用户接口
-    const url = isCollector.value
-      ? `/api/collector/order/${id}`
-      : `/api/user/order/${id}`
+    // 根据角色调用不同的 API
+    const url = isInstitution.value
+      ? `/api/institution/order/${id}`
+      : isCollector.value
+        ? `/api/collector/order/${id}`
+        : `/api/user/order/${id}`
 
     const data = await request({ url })
     order.value = data.order
@@ -454,8 +487,11 @@ async function loadOrderDetail(id) {
     // 回收员信息
     collectorInfo.value = data.collectorInfo || null
 
+    // 衣物去向信息
+    destinationInfo.value = data.destination || null
+
     // 用户 + 机构已接收：检查是否已评价
-    if (isUser.value && data.order.status === 7) {
+    if (isUser.value && data.order.status >= 7) {
       try {
         const review = await request({ url: `/api/user/review/${id}` })
         reviewed.value = !!review
@@ -674,7 +710,7 @@ async function submitReview() {
         content: form.content || null
       }
     })
-    uni.showToast({ title: '评价成功，积分+2', icon: 'success' })
+    uni.showToast({ title: '评价成功', icon: 'success' })
     showReviewPopup.value = false
     reviewed.value = true
   } catch (e) {
@@ -746,6 +782,7 @@ async function submitComplaint() {
 .status-bg-5 { background: linear-gradient(135deg, #9e9e9e, #bdbdbd); }
 .status-bg-6 { background: linear-gradient(135deg, #f44336, #e53935); }
 .status-bg-7 { background: linear-gradient(135deg, #1565c0, #42a5f5); }
+.status-bg-8 { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
 
 /* 区块样式 */
 .section {

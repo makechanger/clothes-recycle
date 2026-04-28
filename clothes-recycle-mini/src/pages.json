@@ -79,6 +79,12 @@
       "style": {
         "navigationBarTitleText": "积分明细"
       }
+    },
+    {
+      "path": "pages/destination/list/list",
+      "style": {
+        "navigationBarTitleText": "衣物去向"
+      }
     }
   ],
   "globalStyle": {

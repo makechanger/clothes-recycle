@@ -333,3 +333,158 @@
 - 清理脏数据，手动录入几套覆盖全链路状态的演示数据。
 - 录制或演练 8-10 分钟的答辩演示脚本。
 - **验证**：连续跑 2 遍演示脚本，不出现任何报错。
+
+---
+
+## 第 5 周：答辩改进 — 机构去向 + 机构后台 + 数据规范化
+
+> 周目标：根据老师反馈完成三项改进：机构端增加衣物去向功能、admin 后台增加机构登录视角、清理并录入规范演示数据
+>
+> **最后更新：2026-04-28**
+
+### 改进 1：机构端增加衣物去向
+
+#### Step 5.1 ✅ 数据库 - 衣物去向字段（重构为一对一模型）— 2026-04-28 完成
+- **设计变更**：从多对多批次模型简化为一对一模型，去向信息直接存储在 `recycle_order` 表上
+- `recycle_order` 表新增 2 个字段：
+  - `destination_type` VARCHAR(20)：去向类型（DONATION/RECYCLE/ENVIRONMENTAL）
+  - `destination_desc` VARCHAR(500)：去向描述
+- 删除原多对多方案的 `clothing_destination` 和 `destination_order` 表
+- `institution` 表新增 `type` 字段（VARCHAR(20)）
+- SQL 迁移脚本：`step5_destination_refactor.sql`（ALTER TABLE + DROP TABLE）
+- 删除废弃实体/Mapper：ClothingDestination.java、ClothingDestinationMapper.java、DestinationOrder.java、DestinationOrderMapper.java、AssignOrdersRequest.java
+- **验证**：数据库执行迁移成功，编译通过 ✅
+
+#### Step 5.2 ✅ 后端 - 衣物去向服务与接口（一对一模型）— 2026-04-28 完成
+- 新建 `ClothingDestinationService`：
+  - `assignDestination()`：为单个订单分配去向，状态 7→8，乐观更新
+  - `listUnassignedOrders()`：查询机构已接收但未分配去向的订单（status=7）
+  - `getOrderDestination()`：查询订单去向信息（供用户端详情使用），返回中文去向类型
+  - `getDestinationTypeLabel()`：英文枚举转中文（DONATION→捐赠、RECYCLE→再生利用、ENVIRONMENTAL→环保处理）
+- 新建 DTO：`CreateDestinationRequest`（orderId, destinationType, description）
+- `InstitutionController` 新增端点：
+  - `POST /api/institution/destination/assign` — 为订单分配去向
+  - `GET /api/institution/destination/unassigned-orders` — 查询未分配去向的订单
+  - `GET /api/institution/order/{id}` — 机构订单详情（含去向信息+状态日志）
+  - `GET /api/institution/order/list` — 机构已接收订单列表（支持按状态筛选）
+- `InstitutionOrderService` 新增：
+  - `getOrderDetail()`：机构订单详情，校验机构归属，返回订单+状态日志+去向信息（中文标签）
+  - `getDestinationTypeLabel()`：英文枚举转中文
+- 用户订单详情接口（`GET /api/user/order/{id}`）：当 status≥7 时补充返回 `destination` 字段（中文去向类型、描述、机构名称）
+- 状态日志 remark 使用中文去向类型（如"分配去向：捐赠，捐赠至云南山区小学"）
+- **验证**：编译通过，接口返回正确数据 ✅
+
+#### Step 5.3 ✅ 小程序 - 机构端去向管理页面（一对一弹窗模式）— 2026-04-28 完成
+- 依赖: Step 5.2
+- 新建 `pages/destination/list/list.vue`：待分配去向订单列表 + 弹窗分配
+  - 订单卡片展示：订单号、衣物分类、实际重量、获得积分
+  - "分配去向"按钮弹出弹窗：radio-group 选择去向类型 + textarea 填写描述
+  - 弹窗确认后调用 `POST /api/institution/destination/assign`
+- `pages.json` 新增路由
+- `custom-tabbar.vue` 机构 Tab 从 2 个改为 3 个（接收任务、衣物去向、个人中心）
+- `index.vue` 机构首页新增快捷入口
+- `user.vue` 机构角色 tabbar current 更新
+- **验证**：机构登录 → 底部 Tab 有"衣物去向" → 点击分配去向 → 弹窗选择类型+填写描述 → 分配成功 ✅
+
+#### Step 5.4 ✅ 小程序 - 用户端订单详情展示衣物去向 + 机构端详情 — 2026-04-28 完成
+- 依赖: Step 5.2
+- 订单详情页 `order/detail/detail.vue`：
+  - 当 `destinationInfo` 存在时展示"衣物去向"信息卡片（去向类型、去向描述、处理机构）
+  - 前端 `destinationTypeMap` 作为兜底映射（后端已返回中文）
+  - 新增机构端 API 路由：机构用户调用 `/api/institution/order/{id}`
+  - 新增机构视角状态描述（institutionStatusDesc）
+- 订单列表页 `order/list/list.vue`：
+  - 移除机构端 goDetail 拦截，机构用户可点击订单查看详情
+  - 新增机构端 Tab 配置（全部/已接收/已分配去向）
+  - 新增状态 7、8 的样式（status-7、status-8）
+- **验证**：用户查看已完成订单能看到衣物去向信息，机构端点击订单能查看详情 ✅
+
+### 改进 2：admin 后台增加机构视角（机构登录 + 机构专属页面）
+
+> 方案：在现有 `clothes-recycle-admin` 项目中增加机构登录入口，机构用户登录后看到机构专属的侧边栏菜单和页面（数据看板、订单管理、扫码接收、机构信息），与管理员视角共存但互不干扰。
+
+#### Step 5.5 🔴 后端 - 机构后台登录与数据接口（3h）
+- 新增机构后台登录接口 `POST /api/institution/login`：用机构关联的 user 手机号+密码登录，返回 token + 机构信息
+- 新增机构后台专属接口（挂在 `/api/institution/` 下）：
+  - `GET /api/institution/statistics`：本机构数据统计（接收订单总数、总重量、近 7 天趋势、品类分布、衣物去向分布）
+  - `GET /api/institution/orders`：本机构已接收订单列表（分页 + 筛选）
+  - `GET /api/institution/orders/{id}`：订单详情
+  - `GET /api/institution/info`：获取本机构信息
+  - `PUT /api/institution/info`：编辑本机构信息（名称、地址、联系人）
+  - `POST /api/institution/order/receive`：扫码/手动输入订单号接收（复用已有逻辑，增加 destination 参数）
+- **验证**：Knife4j 调用各接口，返回正确数据
+
+#### Step 5.6 🔴 管理后台 - 机构登录与路由改造（2h）
+- 依赖: Step 5.5
+- 改造登录页 `LoginView.vue`：增加角色切换（Tab 或下拉），支持"管理员登录"和"机构登录"两种模式
+  - 管理员登录：调用 `/api/admin/login`（现有逻辑不变）
+  - 机构登录：调用 `/api/institution/login`，存储 `institution_token`、机构信息到 Pinia + localStorage
+- 新建 `store/institution.js` Pinia store（机构认证状态管理）
+- 改造 `utils/request.js`：根据当前登录角色（admin/institution）自动选择对应 token
+- 路由改造：
+  - 管理员路由保持不变
+  - 新增机构专属路由（`/inst-dashboard`、`/inst-orders`、`/inst-receive`、`/inst-info`）
+  - 路由守卫根据登录角色限制访问（管理员不能访问机构页面，反之亦然）
+- **验证**：机构账号登录后跳转机构看板，管理员账号登录后跳转管理员看板
+
+#### Step 5.7 🔴 管理后台 - 机构专属页面（4h）
+- 依赖: Step 5.6
+- 改造 `AdminLayout.vue`：根据登录角色动态切换侧边栏菜单
+  - 管理员菜单：现有 8 个菜单项不变
+  - 机构菜单：数据看板、订单管理、扫码接收、机构信息
+- 新建机构页面：
+  - `views/institution/InstDashboard.vue`：机构数据看板（接收总量、趋势图、品类分布、去向统计）
+  - `views/institution/InstOrders.vue`：机构订单列表（已接收订单分页筛选 + 详情弹窗，展示衣物去向）
+  - `views/institution/InstReceive.vue`：扫码/手动接收页面（输入订单号 + 填写衣物去向 + 确认接收）
+  - `views/institution/InstInfo.vue`：机构信息查看与编辑（名称、地址、联系人、类型）
+- 新建 `api/institutionBackend.js` API 模块
+- **验证**：机构登录 → 看到机构专属菜单 → 各页面数据展示正常 → 扫码接收功能正常
+
+#### Step 5.7+ 🟡 管理员后台 - 增加机构列表页（1h）
+- 在管理员视角下新增"机构管理"菜单项
+- 新建 `views/institution/InstitutionManageView.vue`：展示所有机构列表（名称、类型、状态、接收订单数）
+- 支持启用/禁用机构
+- **验证**：管理员登录 → 机构管理 → 列表展示正常
+
+### 改进 3：演示数据规范化
+
+#### Step 5.8 🔴 编写规范演示数据 SQL 脚本（3h）
+- 新建 `clothes-recycle-server/src/main/resources/sql/demo_data.sql`
+- **Part 1 — 清理**：按外键依赖顺序 TRUNCATE 所有业务表
+- **Part 2 — 插入规范数据**：
+  - **用户账号**（8 个）：使用真实感姓名（张伟、李娜、王强、刘洋等），不出现"测试"字样
+  - **回收员**（3 个）：已认证，姓名规范（如"陈志强"、"周建国"、"吴明辉"）
+  - **机构**（3 个）：不同类型（DONATION/RECYCLE/ENVIRONMENTAL），名称规范（如"爱心衣橱公益基金会"、"绿纤再生科技有限公司"、"清源环保处理中心"）
+  - **管理员**（2 个）：admin + operator
+  - **用户地址**（10+ 条）：多个用户各有 1-3 个地址
+  - **积分规则**（5 条）：外套 15、裤子 10、鞋子 12、床品 8、其他 10
+  - **订单**（25+ 条）：覆盖全部状态（0-7），有时间跨度（跨 2-3 周），多个用户和回收员交叉
+  - **订单状态日志**：每个订单按状态链路插入完整日志
+  - **积分流水**：与订单对应，balance_after 逐条累加，user.points_balance 一致
+  - **评价**（5+ 条）：多个订单有评价，评分各异
+  - **申诉**（3+ 条）：不同类型和状态（待处理 + 已处理）
+  - **衣物去向**（status=7 的订单）：填充 destination 字段，体现去向功能
+- **一致性规则**：
+  1. `recycle_order.institution_id` 引用 `institution.id`（不是 user.id）
+  2. `user.points_balance` = 该用户所有 `points_transaction.amount` 之和
+  3. `points_transaction.balance_after` = 截至该条记录的积分累计
+  4. 所有时间戳按逻辑顺序递增
+- **验证**：MySQL 执行脚本无报错，各表数据量和关联关系正确
+
+#### Step 5.9 🔴 全链路验证（1h）
+- 依赖: Step 5.1 ~ 5.8 全部完成
+- 管理员后台验证：
+  - admin/admin123 登录 → 数据看板有数据 → 订单管理 25+ 条覆盖各状态
+  - 机构管理页面 → 3 个机构不同类型 → 启禁用正常
+  - 用户管理 → 8 个用户姓名规范
+- 机构后台验证（同一个项目，机构账号登录）：
+  - 机构账号登录 → 看到机构专属菜单（看板/订单/接收/信息）
+  - 数据看板展示本机构统计数据
+  - 订单列表展示已接收订单 + 衣物去向
+  - 扫码/手动接收订单 + 填写去向 → 接收成功
+  - 机构信息编辑正常
+- 小程序验证：
+  - 用户登录 → 订单列表各 Tab 有数据 → 已完成订单展示衣物去向
+  - 回收员登录 → 待接单列表有订单 → 我的订单有已接订单
+  - 机构登录 → 扫码接收 → 填写去向 → 接收成功
+- **验证**：所有页面数据展示正常，无空白页面，截图可直接用于论文

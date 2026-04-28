@@ -60,6 +60,8 @@ const collectorTabs = [
 // 机构端 TabBar 配置
 const institutionTabs = [
   { text: '接收任务', icon: '📥', path: '/pages/index/index' },
+  { text: '接收记录', icon: '📋', path: '/pages/order/list/list' },
+  { text: '衣物去向', icon: '📦', path: '/pages/destination/list/list' },
   { text: '个人中心', icon: '👤', path: '/pages/user/user' }
 ]
 

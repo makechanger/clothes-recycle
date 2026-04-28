@@ -38,6 +38,7 @@ public class AdminStatisticsService {
         STATUS_NAME_MAP.put(5, "已取消");
         STATUS_NAME_MAP.put(6, "异常");
         STATUS_NAME_MAP.put(7, "机构已接收");
+        STATUS_NAME_MAP.put(8, "已分配去向");
     }
 
     /**
@@ -68,7 +69,7 @@ public class AdminStatisticsService {
         // 订单总数 & 已完成订单数
         overview.put("orderCount", orderMapper.selectCount(null));
         overview.put("completedOrderCount", orderMapper.selectCount(
-                new LambdaQueryWrapper<RecycleOrder>().in(RecycleOrder::getStatus, 4, 7)));
+                new LambdaQueryWrapper<RecycleOrder>().in(RecycleOrder::getStatus, 4, 7, 8)));
 
         // 积分与重量汇总
         Map<String, Object> stats = orderMapper.sumOrderStats();

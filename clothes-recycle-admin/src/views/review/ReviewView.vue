@@ -28,7 +28,11 @@
         </template>
       </el-table-column>
       <el-table-column prop="content" label="评价内容" min-width="180" show-overflow-tooltip />
-      <el-table-column prop="createdAt" label="评价时间" width="170" />
+      <el-table-column prop="createdAt" label="评价时间" width="170">
+        <template #default="{ row }">
+          {{ row.createdAt ? row.createdAt.replace('T', ' ') : '-' }}
+        </template>
+      </el-table-column>
     </el-table>
 
     <!-- 订单详情弹窗 -->
@@ -36,13 +40,8 @@
 
     <!-- 分页 -->
     <div class="pagination">
-      <el-pagination
-        v-model:current-page="page"
-        :page-size="size"
-        :total="total"
-        layout="total, prev, pager, next"
-        @current-change="loadReviews"
-      />
+      <el-pagination v-model:current-page="page" :page-size="size" :total="total" layout="total, prev, pager, next"
+        @current-change="loadReviews" />
     </div>
   </div>
 </template>
@@ -77,10 +76,12 @@ onMounted(() => loadReviews())
 .review-page {
   padding: 20px;
 }
+
 h2 {
   margin-bottom: 20px;
   color: #303133;
 }
+
 .pagination {
   margin-top: 20px;
   display: flex;

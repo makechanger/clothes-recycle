@@ -4,7 +4,7 @@
  */
 
 // 后端 API 基础地址
- const LAN_IP = '192.168.31.201'
+ const LAN_IP = '192.168.31.200'
 
 // 判断是否为真机调试（真机调试时 window 宽度较小且非 devtools 环境）
 const systemInfo = uni.getSystemInfoSync()

@@ -32,6 +32,9 @@ public class Institution {
     /** 联系人 */
     private String contactPerson;
 
+    /** 机构类型：DONATION=捐赠机构, RECYCLE=再生利用, ENVIRONMENTAL=环保处理 */
+    private String type;
+
     /** 状态：1=正常, 0=禁用 */
     private Integer status;
 
