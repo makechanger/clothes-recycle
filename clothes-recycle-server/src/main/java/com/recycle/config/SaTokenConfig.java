@@ -29,6 +29,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                             "/api/auth/login",          // 统一登录（手机号+密码）
                             "/api/auth/register",       // 用户注册
                             "/api/admin/login",         // 管理员登录
+                            "/api/institution/login",   // 机构后台登录
                             "/api/common/**",           // 公共接口（如文件上传）
                             "/api/test",                // 测试接口
                             "/doc.html",                // Knife4j 文档页面
@@ -46,6 +47,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     .check(r -> StpUtil.checkLogin());
 
             SaRouter.match("/api/institution/**")
+                    .notMatch("/api/institution/login")
                     .check(r -> StpUtil.checkLogin());
 
             // 3. 管理员独立鉴权体系（admin 表独立，不在 user 表中）

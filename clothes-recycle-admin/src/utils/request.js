@@ -7,32 +7,51 @@ const request = axios.create({
   timeout: 15000
 })
 
-// 请求拦截器：自动注入管理员 token
+// 判断当前登录角色
+export function getLoginRole() {
+  if (localStorage.getItem('admin_token')) return 'admin'
+  if (localStorage.getItem('inst_token')) return 'institution'
+  return null
+}
+
+// 请求拦截器：根据登录角色注入对应 token
 request.interceptors.request.use(config => {
-  const token = localStorage.getItem('admin_token')
+  const role = getLoginRole()
+  const token = role === 'institution'
+    ? localStorage.getItem('inst_token')
+    : localStorage.getItem('admin_token')
   if (token) {
     config.headers['Authorization'] = token
   }
   return config
 })
 
+// 清除所有登录状态
+function clearAllAuth() {
+  localStorage.removeItem('admin_token')
+  localStorage.removeItem('admin_username')
+  localStorage.removeItem('admin_role')
+  localStorage.removeItem('inst_token')
+  localStorage.removeItem('inst_name')
+  localStorage.removeItem('inst_phone')
+  localStorage.removeItem('inst_user_id')
+  localStorage.removeItem('inst_id')
+  localStorage.removeItem('inst_inst_name')
+}
+
 // 响应拦截器：解包 Result<T> 结构 + 统一错误处理
 request.interceptors.response.use(
   response => {
     const res = response.data
-    // 后端统一返回 { code, message, data }
     if (res.code === 200) {
       return res.data
     }
     if (res.code === 401) {
-      localStorage.removeItem('admin_token')
-      localStorage.removeItem('admin_username')
-      localStorage.removeItem('admin_role')
+      clearAllAuth()
       router.push('/login')
       ElMessage.error('登录已过期，请重新登录')
       return Promise.reject(new Error(res.message))
     }
-    // 业务错误：弹出提示
     ElMessage.error(res.message || '请求失败')
     return Promise.reject(new Error(res.message))
   },
@@ -40,10 +59,7 @@ request.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       if (status === 401) {
-        // 未登录或 token 过期：清除本地状态，跳转登录页
-        localStorage.removeItem('admin_token')
-        localStorage.removeItem('admin_username')
-        localStorage.removeItem('admin_role')
+        clearAllAuth()
         router.push('/login')
         ElMessage.error('登录已过期，请重新登录')
       } else if (data && data.message) {
