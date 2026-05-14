@@ -3,18 +3,7 @@
  * 功能：自动携带 token、统一错误处理、loading 控制
  */
 
-// 后端 API 基础地址
- const LAN_IP = '192.168.31.200'
-
-// 判断是否为真机调试（真机调试时 window 宽度较小且非 devtools 环境）
-const systemInfo = uni.getSystemInfoSync()
-const isRealDevice = systemInfo.platform !== 'devtools'
-
-// 模拟器用 localhost，真机用局域网 IP
-const BASE_URL = isRealDevice
-  ? `http://${LAN_IP}:8080`
-  : 'http://localhost:8080'
-
+const BASE_URL = 'http://47.116.79.134:8080'
 /**
  * 发起请求
  * @param {Object} options - 请求配置
@@ -27,6 +16,8 @@ const BASE_URL = isRealDevice
 const request = (options) => {
   const { url, method = 'GET', data = {}, loading = true } = options
   // console.log('【实际请求地址】', BASE_URL + url)
+  // console.log('【请求方法】', method)
+  // console.log('【请求参数】', data)
 
   // 显示加载提示
   if (loading) {

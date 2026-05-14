@@ -21,7 +21,11 @@
           </el-menu-item>
           <el-menu-item index="/collectors">
             <el-icon><UserFilled /></el-icon>
-            <span>回收员/机构管理</span>
+            <span>回收员管理</span>
+          </el-menu-item>
+          <el-menu-item index="/institutions">
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>机构管理</span>
           </el-menu-item>
           <el-menu-item v-if="adminStore.isSuperAdmin" index="/admins">
             <el-icon><Key /></el-icon>

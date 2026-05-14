@@ -9,6 +9,7 @@ import com.recycle.dto.AdminLoginRequest;
 import com.recycle.entity.Admin;
 import com.recycle.mapper.AdminMapper;
 import com.recycle.service.AdminCollectorService;
+import com.recycle.service.AdminInstitutionService;
 import com.recycle.service.AdminOrderService;
 import com.recycle.service.AdminUserService;
 import com.recycle.service.ComplaintService;
@@ -40,6 +41,7 @@ public class AdminController {
     private final AdminMapper adminMapper;
     private final RoleApplicationService roleApplicationService;
     private final AdminCollectorService adminCollectorService;
+    private final AdminInstitutionService adminInstitutionService;
     private final AdminOrderService adminOrderService;
     private final PointsRuleService pointsRuleService;
     private final AdminUserService adminUserService;
@@ -93,8 +95,8 @@ public class AdminController {
      */
     @Operation(summary = "查看待审核申请列表")
     @GetMapping("/applications/pending")
-    public Result<?> pendingApplications() {
-        return Result.success(roleApplicationService.getPendingApplications());
+    public Result<?> pendingApplications(@RequestParam(required = false) String applyRole) {
+        return Result.success(roleApplicationService.getPendingApplications(applyRole));
     }
 
     /**
@@ -102,8 +104,8 @@ public class AdminController {
      */
     @Operation(summary = "审批记录列表")
     @GetMapping("/applications/processed")
-    public Result<?> processedApplications() {
-        return Result.success(roleApplicationService.getProcessedApplications());
+    public Result<?> processedApplications(@RequestParam(required = false) String applyRole) {
+        return Result.success(roleApplicationService.getProcessedApplications(applyRole));
     }
 
     /**
@@ -136,6 +138,16 @@ public class AdminController {
     @GetMapping("/collectors")
     public Result<?> listCollectors() {
         return Result.success(adminCollectorService.listCollectors());
+    }
+
+    /**
+     * 查询所有机构列表
+     * 关联 user 表和 institution 表，返回合并后的机构信息
+     */
+    @Operation(summary = "机构列表")
+    @GetMapping("/institutions")
+    public Result<?> listInstitutions() {
+        return Result.success(adminInstitutionService.listInstitutions());
     }
 
     // ==================== 订单管理 ====================

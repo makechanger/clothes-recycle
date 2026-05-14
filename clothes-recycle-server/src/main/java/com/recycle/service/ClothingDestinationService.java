@@ -64,7 +64,7 @@ public class ClothingDestinationService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        if (!institution.getId().equals(order.getInstitutionId())) {
+        if (!userId.equals(order.getInstitutionId())) {
             throw new BusinessException(403, "订单不属于本机构");
         }
         if (order.getStatus() != 7) {
@@ -99,7 +99,7 @@ public class ClothingDestinationService {
 
         return recycleOrderMapper.selectList(
                 new LambdaQueryWrapper<RecycleOrder>()
-                        .eq(RecycleOrder::getInstitutionId, institution.getId())
+                        .eq(RecycleOrder::getInstitutionId, userId)
                         .eq(RecycleOrder::getStatus, 7)
                         .orderByDesc(RecycleOrder::getUpdatedAt)
         );
@@ -133,7 +133,8 @@ public class ClothingDestinationService {
         result.put("destinationDesc", order.getDestinationDesc());
 
         if (order.getInstitutionId() != null) {
-            Institution institution = institutionMapper.selectById(order.getInstitutionId());
+            Institution institution = institutionMapper.selectOne(
+                    new LambdaQueryWrapper<Institution>().eq(Institution::getUserId, order.getInstitutionId()));
             if (institution != null) {
                 result.put("institutionName", institution.getName());
                 result.put("institutionType", institution.getType());

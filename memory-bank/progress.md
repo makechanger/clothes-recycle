@@ -1,6 +1,6 @@
 # 项目进度记录
 
-## 当前状态：第 4 周功能补全进行中 — Step 4.3/4.4/4.5/4.7/4.11/管理员管理/权限控制/密码加密 ✅ 完成，Step 4.8/4.9/4.12 待开发
+## 当前状态：第 5 周答辩改进进行中 — Step 5.1~5.7 ✅ 完成，Step 5.8/5.9 待开发
 
 ---
 
@@ -624,12 +624,87 @@
 
 ---
 
+---
+
+## 第 5 周：答辩改进 — 机构去向 + 机构后台 + 数据规范化
+
+### Step 5.1 ✅ 数据库 - 衣物去向字段（一对一模型）— 2026-04-28 完成
+
+**完成内容：**
+- `recycle_order` 表新增 `destination_type`（VARCHAR(20)）和 `destination_desc`（VARCHAR(500)）字段
+- 删除原多对多方案的 `clothing_destination` 和 `destination_order` 表
+- `institution` 表新增 `type` 字段
+- SQL 迁移脚本：`step5_destination_refactor.sql`
+
+---
+
+### Step 5.2 ✅ 后端 - 衣物去向服务与接口（一对一模型）— 2026-04-28 完成
+
+**完成内容：**
+- `ClothingDestinationService`：assignDestination()（状态7→8）、listUnassignedOrders()、getOrderDestination()
+- `CreateDestinationRequest` DTO
+- `InstitutionController` 新增：分配去向、未分配订单列表、机构订单详情、机构订单列表
+- `InstitutionOrderService` 新增：getOrderDetail()、listReceivedOrders()
+- 用户订单详情接口补充 destination 字段
+
+---
+
+### Step 5.3 ✅ 小程序 - 机构端去向管理页面 — 2026-04-28 完成
+
+**完成内容：**
+- 新建 `pages/destination/list/list.vue`：待分配去向订单列表 + 弹窗分配
+- 机构 TabBar 从 2 个改为 3 个（接收任务、衣物去向、个人中心）
+
+---
+
+### Step 5.4 ✅ 小程序 - 用户端订单详情展示衣物去向 — 2026-04-28 完成
+
+**完成内容：**
+- 订单详情页展示衣物去向信息卡片（去向类型、描述、处理机构）
+- 机构端可点击订单查看详情
+- 机构端 Tab 配置（全部/已接收/已分配去向）
+
+---
+
+### Step 5.5 ✅ 后端 - 机构后台登录与数据接口（3h）— 2026-04-28 完成
+
+**完成内容：**
+- `InstitutionController`：机构登录接口 `POST /api/institution/login`（用 user 手机号+密码，返回 token + 机构信息）
+- `InstitutionStatisticsService`：机构数据统计（overview/orderTrend/categoryDistribution/destinationDistribution）
+- 机构信息 CRUD：`GET/PUT /api/institution/info`
+- 扫码接收：`POST /api/institution/order/receive`
+- `SaTokenConfig` 双认证体系：StpUtil（用户/机构）+ StpLogic("admin")（管理员）
+
+---
+
+### Step 5.6 ✅ 管理后台 - 机构登录与路由改造（2h）— 2026-04-28 完成
+
+**完成内容：**
+- 双 token 架构：`admin_token` / `inst_token`，`getLoginRole()` 判断当前角色
+- `store/institution.js`：机构认证 Pinia store
+- `LoginView.vue`：el-tabs 切换管理员/机构登录
+- `router/index.js`：机构路由（inst-dashboard/inst-orders/inst-receive/inst-info）+ 角色守卫
+- `AdminLayout.vue`：双菜单（管理员 8 项 / 机构 4 项）
+- `request.js`：根据角色自动选择 token + clearAllAuth()
+
+---
+
+### Step 5.7 ✅ 管理后台 - 机构专属页面（4h）— 2026-04-29 完成
+
+**完成内容：**
+
+**新建文件：**
+- `views/institution/InstDashboard.vue`：机构数据看板（5 概览卡片 + 3 ECharts 图表：趋势折线图、去向饼图、品类柱状图）
+- `views/institution/InstOrders.vue`：机构订单管理（状态筛选 + 分页表格 + 详情弹窗 + 分配去向弹窗）
+- `views/institution/InstReceive.vue`：扫码接收页面（输入订单号确认接收 + 待分配去向列表 + 分配去向弹窗）
+- `views/institution/InstInfo.vue`：机构信息查看与编辑（查看/编辑模式切换）
+- `api/institution.js`：机构 API 模块（统计、信息、订单、接收、去向分配）
+
+---
+
 ### 下一步计划
 
 | 步骤 | 优先级 | 内容 | 预计耗时 | 状态 |
 |------|--------|------|----------|------|
-| 4.6 | 🟡 P1 | 小程序我的评价记录页 | 1h | ❌ 已取消 |
-| 4.8 | 🟡 P1 | 小程序订单详情状态时间线 | 1h | 未开始 |
-| 4.9 | 🟡 P1 | 小程序接单后展示回收员实名信息 | 0.5h | 未开始 |
-| 4.10 | 🟡 P1 | 机构端接收数据统计页 | 1.5h | ❌ 已取消 |
-| 4.12 | 🔴 P0 | 体验优化与演示准备 | 6h | 未开始 |
+| 5.8 | 🔴 P0 | 演示数据 SQL 脚本（清理脏数据+录入全链路演示数据） | 3h | 未开始 |
+| 5.9 | 🔴 P0 | 全链路端到端验证 | 1h | 未开始 |

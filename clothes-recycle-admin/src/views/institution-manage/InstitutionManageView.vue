@@ -1,32 +1,23 @@
 <template>
-  <!-- 回收员管理页面：包含回收员列表、待审核申请和审批记录 -->
-  <div class="collector-page">
+  <div class="institution-page">
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-      <!-- Tab 1：回收员列表 -->
-      <el-tab-pane label="回收员列表" name="list">
-        <!-- 回收员表格 -->
-        <el-table :data="collectors" v-loading="loadingCollectors" stripe>
+      <!-- Tab 1：机构列表 -->
+      <el-tab-pane label="机构列表" name="list">
+        <el-table :data="institutions" v-loading="loadingInstitutions" stripe>
           <el-table-column prop="phone" label="手机号" min-width="140" />
-          <el-table-column prop="name" label="姓名" min-width="120" />
-          <el-table-column label="资质状态" min-width="120">
+          <el-table-column prop="name" label="机构名称" min-width="160" />
+          <el-table-column prop="contactPerson" label="联系人" min-width="120" />
+          <el-table-column prop="address" label="地址" min-width="200" />
+          <el-table-column prop="type" label="类型" min-width="120" />
+          <el-table-column label="状态" min-width="100">
             <template #default="{ row }">
-              <el-tag :type="statusTagType(row.collectorStatus)">
-                {{ statusText(row.collectorStatus) }}
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? '正常' : '已禁用' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="身份证照片" min-width="120">
-            <template #default="{ row }">
-              <el-image
-                v-if="row.idCardPhoto"
-                :src="row.idCardPhoto"
-                :preview-src-list="[row.idCardPhoto]"
-                fit="cover"
-                style="width: 60px; height: 40px; cursor: pointer;"
-                preview-teleported
-              />
-              <span v-else style="color: #999;">未上传</span>
-            </template>
+          <el-table-column label="创建时间" min-width="170">
+            <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
@@ -34,24 +25,11 @@
       <!-- Tab 2：待审核申请 -->
       <el-tab-pane label="待审核申请" name="pending">
         <el-table :data="pendingApplications" v-loading="loadingApplications" stripe>
-          <el-table-column prop="name" label="姓名" min-width="140" />
-          <el-table-column label="身份证照片" min-width="120">
-            <template #default="{ row }">
-              <el-image
-                v-if="row.idCardPhoto"
-                :src="row.idCardPhoto"
-                :preview-src-list="[row.idCardPhoto]"
-                fit="cover"
-                style="width: 60px; height: 40px; cursor: pointer;"
-                preview-teleported
-              />
-              <span v-else style="color: #999;">无</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="createdAt" label="申请时间" min-width="180">
-            <template #default="{ row }">
-              {{ formatTime(row.createdAt) }}
-            </template>
+          <el-table-column prop="name" label="机构名称" min-width="160" />
+          <el-table-column prop="address" label="地址" min-width="200" />
+          <el-table-column prop="contactPerson" label="联系人" min-width="120" />
+          <el-table-column label="申请时间" min-width="170">
+            <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
           </el-table-column>
           <el-table-column label="操作" min-width="180" fixed="right">
             <template #default="{ row }">
@@ -65,7 +43,9 @@
       <!-- Tab 3：审批记录 -->
       <el-tab-pane label="审批记录" name="history">
         <el-table :data="processedApplications" v-loading="loadingProcessed" stripe>
-          <el-table-column prop="name" label="姓名" min-width="140" />
+          <el-table-column prop="name" label="机构名称" min-width="160" />
+          <el-table-column prop="address" label="地址" min-width="180" />
+          <el-table-column prop="contactPerson" label="联系人" min-width="120" />
           <el-table-column label="审批结果" min-width="100">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'danger'">
@@ -74,19 +54,13 @@
             </template>
           </el-table-column>
           <el-table-column label="拒绝原因" min-width="180">
-            <template #default="{ row }">
-              {{ row.rejectReason || '-' }}
-            </template>
+            <template #default="{ row }">{{ row.rejectReason || '-' }}</template>
           </el-table-column>
           <el-table-column label="申请时间" min-width="170">
-            <template #default="{ row }">
-              {{ formatTime(row.createdAt) }}
-            </template>
+            <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
           </el-table-column>
           <el-table-column label="处理时间" min-width="170">
-            <template #default="{ row }">
-              {{ formatTime(row.updatedAt) }}
-            </template>
+            <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
@@ -112,20 +86,18 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getCollectors,
+  getInstitutions,
   getPendingApplications,
   getProcessedApplications,
   approveApplication,
   rejectApplication
-} from '../../api/collector'
-
-/* ========== 状态变量 ========== */
+} from '../../api/institution-admin'
 
 const activeTab = ref('list')
 
-// 回收员列表
-const collectors = ref([])
-const loadingCollectors = ref(false)
+// 机构列表
+const institutions = ref([])
+const loadingInstitutions = ref(false)
 
 // 待审核申请
 const pendingApplications = ref([])
@@ -141,21 +113,17 @@ const rejectReason = ref('')
 const rejecting = ref(false)
 const currentRejectId = ref(null)
 
-/* ========== 数据加载 ========== */
-
-/** 加载回收员列表 */
-async function loadCollectors() {
-  loadingCollectors.value = true
+async function loadInstitutions() {
+  loadingInstitutions.value = true
   try {
-    collectors.value = await getCollectors()
+    institutions.value = await getInstitutions()
   } catch (e) {
     // 错误由 request.js 统一处理
   } finally {
-    loadingCollectors.value = false
+    loadingInstitutions.value = false
   }
 }
 
-/** 加载待审核申请列表 */
 async function loadPendingApplications() {
   loadingApplications.value = true
   try {
@@ -167,7 +135,6 @@ async function loadPendingApplications() {
   }
 }
 
-/** 加载已处理的审批记录 */
 async function loadProcessedApplications() {
   loadingProcessed.value = true
   try {
@@ -179,10 +146,9 @@ async function loadProcessedApplications() {
   }
 }
 
-/** Tab 切换时加载对应数据 */
 function handleTabChange(tab) {
   if (tab === 'list') {
-    loadCollectors()
+    loadInstitutions()
   } else if (tab === 'pending') {
     loadPendingApplications()
   } else if (tab === 'history') {
@@ -190,13 +156,10 @@ function handleTabChange(tab) {
   }
 }
 
-/* ========== 审批操作 ========== */
-
-/** 审批通过 */
 async function handleApprove(row) {
   try {
     await ElMessageBox.confirm(
-      `确认通过「${row.name}」的回收员申请？`,
+      `确认通过「${row.name}」的机构申请？`,
       '审批确认',
       { confirmButtonText: '通过', cancelButtonText: '取消', type: 'info' }
     )
@@ -208,20 +171,18 @@ async function handleApprove(row) {
     await approveApplication(row.id)
     ElMessage.success('审批通过')
     loadPendingApplications()
-    loadCollectors()
+    loadInstitutions()
   } catch (e) {
     // 错误由 request.js 统一处理
   }
 }
 
-/** 点击拒绝按钮，弹出原因输入框 */
 function handleRejectClick(row) {
   currentRejectId.value = row.id
   rejectReason.value = ''
   showRejectDialog.value = true
 }
 
-/** 确认拒绝 */
 async function handleReject() {
   rejecting.value = true
   try {
@@ -236,35 +197,18 @@ async function handleReject() {
   }
 }
 
-/* ========== 工具函数 ========== */
-
-/** 资质状态文字 */
-function statusText(status) {
-  const map = { 0: '待完善资质', 1: '待审核', 2: '已认证', 3: '已禁用' }
-  return map[status] || '未知'
-}
-
-/** 资质状态标签颜色 */
-function statusTagType(status) {
-  const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' }
-  return map[status] || 'info'
-}
-
-/** 格式化时间 */
 function formatTime(time) {
   if (!time) return '-'
   return time.replace('T', ' ').substring(0, 19)
 }
 
-/* ========== 初始化 ========== */
-
 onMounted(() => {
-  loadCollectors()
+  loadInstitutions()
 })
 </script>
 
 <style scoped>
-.collector-page {
+.institution-page {
   padding: 0;
 }
 </style>

@@ -44,7 +44,7 @@ public class InstitutionStatisticsService {
      */
     public Map<String, Object> getStatistics(Long userId) {
         Institution institution = getInstitution(userId);
-        Long institutionId = institution.getId();
+        Long institutionId = userId;
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("overview", buildOverview(institutionId));

@@ -112,29 +112,37 @@ public class RoleApplicationService {
 
     /**
      * 查询所有待审核的申请（管理员用）
+     * 支持按申请角色过滤
      *
+     * @param applyRole 申请角色（COLLECTOR/INSTITUTION），为 null 时返回全部
      * @return 待审核申请列表
      */
-    public List<RoleApplication> getPendingApplications() {
-        return roleApplicationMapper.selectList(
-                new LambdaQueryWrapper<RoleApplication>()
-                        .eq(RoleApplication::getStatus, 0)
-                        .orderByAsc(RoleApplication::getCreatedAt)
-        );
+    public List<RoleApplication> getPendingApplications(String applyRole) {
+        LambdaQueryWrapper<RoleApplication> wrapper = new LambdaQueryWrapper<RoleApplication>()
+                .eq(RoleApplication::getStatus, 0)
+                .orderByAsc(RoleApplication::getCreatedAt);
+        if (applyRole != null && !applyRole.isEmpty()) {
+            wrapper.eq(RoleApplication::getApplyRole, applyRole);
+        }
+        return roleApplicationMapper.selectList(wrapper);
     }
 
     /**
      * 查询所有已处理的申请记录（管理员审批历史）
      * 包含已通过（status=1）和已拒绝（status=2）的记录
+     * 支持按申请角色过滤
      *
+     * @param applyRole 申请角色（COLLECTOR/INSTITUTION），为 null 时返回全部
      * @return 已处理申请列表，按处理时间倒序
      */
-    public List<RoleApplication> getProcessedApplications() {
-        return roleApplicationMapper.selectList(
-                new LambdaQueryWrapper<RoleApplication>()
-                        .in(RoleApplication::getStatus, 1, 2)
-                        .orderByDesc(RoleApplication::getUpdatedAt)
-        );
+    public List<RoleApplication> getProcessedApplications(String applyRole) {
+        LambdaQueryWrapper<RoleApplication> wrapper = new LambdaQueryWrapper<RoleApplication>()
+                .in(RoleApplication::getStatus, 1, 2)
+                .orderByDesc(RoleApplication::getUpdatedAt);
+        if (applyRole != null && !applyRole.isEmpty()) {
+            wrapper.eq(RoleApplication::getApplyRole, applyRole);
+        }
+        return roleApplicationMapper.selectList(wrapper);
     }
 
     /**

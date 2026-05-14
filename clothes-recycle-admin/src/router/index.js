@@ -33,6 +33,12 @@ const routes = [
         meta: { title: '回收员管理', role: 'admin' }
       },
       {
+        path: 'institutions',
+        name: 'Institutions',
+        component: () => import('../views/institution-manage/InstitutionManageView.vue'),
+        meta: { title: '机构管理', role: 'admin' }
+      },
+      {
         path: 'admins',
         name: 'Admins',
         component: () => import('../views/admin/AdminManagerView.vue'),

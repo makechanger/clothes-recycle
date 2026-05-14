@@ -106,7 +106,7 @@ public class InstitutionOrderService {
                         .eq(RecycleOrder::getId, order.getId())
                         .eq(RecycleOrder::getStatus, 4)
                         .set(RecycleOrder::getStatus, 7)
-                        .set(RecycleOrder::getInstitutionId, institution.getId())
+                        .set(RecycleOrder::getInstitutionId, userId)
                         .set(RecycleOrder::getPointsAwarded, points)
         );
 
@@ -142,7 +142,7 @@ public class InstitutionOrderService {
 
         // 查询该机构接收的订单
         LambdaQueryWrapper<RecycleOrder> wrapper = new LambdaQueryWrapper<RecycleOrder>()
-                .eq(RecycleOrder::getInstitutionId, institution.getId())
+                .eq(RecycleOrder::getInstitutionId, userId)
                 .orderByDesc(RecycleOrder::getUpdatedAt);
 
         if (status != null) {
@@ -166,7 +166,7 @@ public class InstitutionOrderService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        if (!institution.getId().equals(order.getInstitutionId())) {
+        if (!userId.equals(order.getInstitutionId())) {
             throw new BusinessException(403, "无权查看该订单");
         }
 
