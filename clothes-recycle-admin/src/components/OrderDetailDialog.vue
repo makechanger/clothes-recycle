@@ -47,6 +47,18 @@
           </div>
         </div>
 
+        <!-- 溯源二维码 -->
+        <div v-if="detail.qrCode" class="section">
+          <h4>溯源二维码</h4>
+          <el-image
+            class="qr-image"
+            :src="detail.qrCode"
+            :preview-src-list="[detail.qrCode]"
+            fit="contain"
+            preview-teleported
+          />
+        </div>
+
         <!-- 状态流转日志 -->
         <div v-if="detail.statusLogs && detail.statusLogs.length" class="section">
           <h4>状态流转</h4>
@@ -138,5 +150,11 @@ defineExpose({ open })
 .photo-list {
   display: flex;
   flex-wrap: wrap;
+}
+.qr-image {
+  width: 180px;
+  height: 180px;
+  border-radius: 6px;
+  background: #fff;
 }
 </style>

@@ -76,6 +76,18 @@
             <el-descriptions-item label="完成时间">{{ formatTime(detailData.order.completedAt) }}</el-descriptions-item>
           </el-descriptions>
 
+          <!-- 溯源二维码 -->
+          <div v-if="detailData.order.qrCode" class="section">
+            <h4>溯源二维码</h4>
+            <el-image
+              class="qr-image"
+              :src="detailData.order.qrCode"
+              :preview-src-list="[detailData.order.qrCode]"
+              fit="contain"
+              preview-teleported
+            />
+          </div>
+
           <!-- 去向信息 -->
           <div v-if="detailData.destination" class="section">
             <h4>衣物去向</h4>
@@ -279,5 +291,11 @@ onMounted(() => {
 .section h4 {
   margin-bottom: 12px;
   color: #303133;
+}
+.qr-image {
+  width: 180px;
+  height: 180px;
+  border-radius: 6px;
+  background: #fff;
 }
 </style>

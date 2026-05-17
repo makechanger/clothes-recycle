@@ -124,6 +124,19 @@
       </view>
     </view>
 
+    <!-- 溯源二维码（称重完成后生成） -->
+    <view v-if="order.qrCode" class="section">
+      <view class="section-title">溯源二维码</view>
+      <view class="qr-box" @click="previewQrCode">
+        <image
+          class="qr-image"
+          :src="getQrCodeUrl(order.qrCode)"
+          mode="aspectFit"
+        />
+      </view>
+      <text class="qr-tip">点击可预览，预览页可长按保存/转发</text>
+    </view>
+
     <!-- 状态时间线 -->
     <view v-if="statusLogs.length > 0" class="section">
       <view class="section-title">订单跟踪</view>
@@ -533,6 +546,27 @@ function getPhotoUrl(photo) {
 }
 
 /**
+ * 获取二维码完整 URL
+ */
+function getQrCodeUrl(qrCode) {
+  if (!qrCode) return ''
+  return qrCode.startsWith('http') ? qrCode : BASE_URL + qrCode
+}
+
+/**
+ * 预览二维码（全屏查看）
+ */
+function previewQrCode() {
+  if (!order.value?.qrCode) return
+  const url = getQrCodeUrl(order.value.qrCode)
+  if (!url) return
+  uni.previewImage({
+    current: url,
+    urls: [url]
+  })
+}
+
+/**
  * 预览照片（全屏查看）
  */
 function previewPhoto(index) {
@@ -864,6 +898,27 @@ async function submitComplaint() {
   width: 200rpx;
   height: 200rpx;
   border-radius: 12rpx;
+}
+
+/* 溯源二维码 */
+.qr-box {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10rpx 0 6rpx;
+}
+.qr-image {
+  width: 360rpx;
+  height: 360rpx;
+  border-radius: 12rpx;
+  background: #fff;
+}
+.qr-tip {
+  display: block;
+  text-align: center;
+  color: #999;
+  font-size: 24rpx;
+  margin-top: 10rpx;
 }
 
 /* 底部操作按钮 */
