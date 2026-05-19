@@ -1,4 +1,4 @@
-package com.recycle.controller.admin;
+package com.recycle.controller;
 
 import com.recycle.common.Result;
 import com.recycle.dto.LoginRequest;
