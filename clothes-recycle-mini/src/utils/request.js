@@ -4,6 +4,7 @@
  */
 
 const BASE_URL = 'http://47.116.79.134:8080'
+// const BASE_URL = 'http://localhost:8080'
 /**
  * 发起请求
  * @param {Object} options - 请求配置
