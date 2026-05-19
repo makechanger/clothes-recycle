@@ -1,4 +1,4 @@
-package com.recycle.controller.institution;
+package com.recycle.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.crypto.digest.BCrypt;
