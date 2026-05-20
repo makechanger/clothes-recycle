@@ -48,8 +48,7 @@ public class AdminUserService {
         }
 
         User existUser = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getPhone, phone)
-        );
+                new LambdaQueryWrapper<User>().eq(User::getPhone, phone));
         if (existUser != null) {
             throw new BusinessException(400, "该手机号已注册");
         }
@@ -71,8 +70,10 @@ public class AdminUserService {
      * 支持按角色、状态筛选，按手机号/姓名模糊搜索
      */
     public Map<String, Object> listUsers(String role, Integer status, String keyword, Integer page, Integer size) {
-        if (page == null || page < 1) page = 1;
-        if (size == null || size < 1) size = 10;
+        if (page == null || page < 1)
+            page = 1;
+        if (size == null || size < 1)
+            size = 10;
 
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
                 .eq(role != null && !role.isEmpty(), User::getRole, role)
@@ -143,14 +144,31 @@ public class AdminUserService {
         }
 
         String oldRole = user.getRole();
+
+        // 1. 先修改 user 表角色
         user.setRole(newRole);
         userMapper.updateById(user);
 
-        // 升级为回收员时，自动创建扩展记录
+        // 2. 如果新角色不是回收员，就删除 collector 扩展记录
+        if (!"COLLECTOR".equals(newRole)) {
+            collectorMapper.delete(
+                    new LambdaQueryWrapper<Collector>()
+                            .eq(Collector::getUserId, userId));
+        }
+
+        // 3. 如果新角色不是机构，就删除 institution 扩展记录
+        if (!"INSTITUTION".equals(newRole)) {
+            institutionMapper.delete(
+                    new LambdaQueryWrapper<Institution>()
+                            .eq(Institution::getUserId, userId));
+        }
+
+        // 4. 如果改成回收员，创建回收员扩展记录
         if ("COLLECTOR".equals(newRole)) {
             Collector existing = collectorMapper.selectOne(
-                    new LambdaQueryWrapper<Collector>().eq(Collector::getUserId, userId)
-            );
+                    new LambdaQueryWrapper<Collector>()
+                            .eq(Collector::getUserId, userId));
+
             if (existing == null) {
                 Collector collector = new Collector();
                 collector.setUserId(userId);
@@ -160,11 +178,12 @@ public class AdminUserService {
             }
         }
 
-        // 升级为机构时，自动创建扩展记录
+        // 5. 如果改成机构，创建机构扩展记录
         if ("INSTITUTION".equals(newRole)) {
             Institution existing = institutionMapper.selectOne(
-                    new LambdaQueryWrapper<Institution>().eq(Institution::getUserId, userId)
-            );
+                    new LambdaQueryWrapper<Institution>()
+                            .eq(Institution::getUserId, userId));
+
             if (existing == null) {
                 Institution institution = new Institution();
                 institution.setUserId(userId);
@@ -189,47 +208,38 @@ public class AdminUserService {
 
         // 1. 删除该用户订单关联的状态流转日志
         List<Long> orderIds = recycleOrderMapper.selectList(
-                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getUserId, userId).select(RecycleOrder::getId)
-        ).stream().map(RecycleOrder::getId).toList();
+                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getUserId, userId).select(RecycleOrder::getId))
+                .stream().map(RecycleOrder::getId).toList();
         if (!orderIds.isEmpty()) {
             orderStatusLogMapper.delete(
-                    new LambdaQueryWrapper<OrderStatusLog>().in(OrderStatusLog::getOrderId, orderIds)
-            );
+                    new LambdaQueryWrapper<OrderStatusLog>().in(OrderStatusLog::getOrderId, orderIds));
         }
 
         // 2. 删除回收订单（用户下单的 + 作为回收员/机构关联的）
         recycleOrderMapper.delete(
-                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getUserId, userId)
-        );
+                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getUserId, userId));
         recycleOrderMapper.delete(
-                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getCollectorId, userId)
-        );
+                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getCollectorId, userId));
         recycleOrderMapper.delete(
-                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getInstitutionId, userId)
-        );
+                new LambdaQueryWrapper<RecycleOrder>().eq(RecycleOrder::getInstitutionId, userId));
 
         // 3. 删除用户地址
         userAddressMapper.delete(
-                new LambdaQueryWrapper<UserAddress>().eq(UserAddress::getUserId, userId)
-        );
+                new LambdaQueryWrapper<UserAddress>().eq(UserAddress::getUserId, userId));
 
         // 4. 删除积分流水
         pointsTransactionMapper.delete(
-                new LambdaQueryWrapper<PointsTransaction>().eq(PointsTransaction::getUserId, userId)
-        );
+                new LambdaQueryWrapper<PointsTransaction>().eq(PointsTransaction::getUserId, userId));
 
         // 5. 删除角色申请记录
         roleApplicationMapper.delete(
-                new LambdaQueryWrapper<RoleApplication>().eq(RoleApplication::getUserId, userId)
-        );
+                new LambdaQueryWrapper<RoleApplication>().eq(RoleApplication::getUserId, userId));
 
         // 6. 删除扩展表记录
         collectorMapper.delete(
-                new LambdaQueryWrapper<Collector>().eq(Collector::getUserId, userId)
-        );
+                new LambdaQueryWrapper<Collector>().eq(Collector::getUserId, userId));
         institutionMapper.delete(
-                new LambdaQueryWrapper<Institution>().eq(Institution::getUserId, userId)
-        );
+                new LambdaQueryWrapper<Institution>().eq(Institution::getUserId, userId));
 
         // 7. 删除用户本身
         userMapper.deleteById(userId);

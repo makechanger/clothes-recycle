@@ -53,6 +53,13 @@ public class AdminCollectorService {
         // 3. 组装 VO
         List<CollectorVO> voList = new ArrayList<>();
         for (Collector c : collectors) {
+            User user = userMap.get(c.getUserId());
+
+            // 只显示当前角色仍然是回收员的用户
+            if (user == null || !"COLLECTOR".equals(user.getRole())) {
+                continue;
+            }
+
             CollectorVO vo = new CollectorVO();
             vo.setId(c.getId());
             vo.setUserId(c.getUserId());
@@ -61,7 +68,6 @@ public class AdminCollectorService {
             vo.setCollectorStatus(c.getStatus());
             vo.setCreatedAt(c.getCreatedAt());
 
-            User user = userMap.get(c.getUserId());
             if (user != null) {
                 vo.setPhone(user.getPhone());
             }
