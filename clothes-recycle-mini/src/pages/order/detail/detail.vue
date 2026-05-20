@@ -85,19 +85,21 @@
     </view>
 
     <!-- 衣物照片 -->
-    <view v-if="photoList.length > 0" class="section">
-      <view class="section-title">衣物照片</view>
-      <view class="photo-list">
-        <image
-          v-for="(photo, index) in photoList"
-          :key="index"
-          :src="getPhotoUrl(photo)"
-          class="photo-img"
-          mode="aspectFill"
-          @click="previewPhoto(index)"
-        />
-      </view>
-    </view>
+<view v-if="photoList.length > 0" class="section">
+  <view class="section-title">衣物照片</view>
+  <view class="photo-list">
+    <image
+      v-for="(photo, index) in photoList"
+      :key="index"
+      :src="displayPhotoList[index]"
+      class="photo-img"
+      mode="aspectFill"
+      @click="previewPhoto(index)"
+      @load="onImageLoad"
+      @error="onImageError"
+    />
+  </view>
+</view>
 
     <!-- 订单信息 -->
     <view class="section">
@@ -128,10 +130,12 @@
     <view v-if="order.qrCode" class="section">
       <view class="section-title">溯源二维码</view>
       <view class="qr-box" @click="previewQrCode">
-        <image
+       <image
           class="qr-image"
-          :src="getQrCodeUrl(order.qrCode)"
+          :src="displayQrCode"
           mode="aspectFit"
+          @load="onImageLoad"
+          @error="onImageError"
         />
       </view>
       <text class="qr-tip">点击可预览，预览页可长按保存/转发</text>
@@ -399,6 +403,9 @@ const addressInfo = ref(null)
 // 解析后的照片列表
 const photoList = ref([])
 
+const displayPhotoList = ref([])
+const displayQrCode = ref('')
+
 // 状态时间线日志
 const statusLogs = ref([])
 
@@ -496,6 +503,7 @@ async function loadOrderDetail(id) {
         photoList.value = []
       }
     }
+    await prepareDisplayImages()
 
     // 回收员信息
     collectorInfo.value = data.collectorInfo || null
@@ -538,28 +546,82 @@ function parseCategories(json) {
   }
 }
 
+const STATIC_BASE_URL = 'http://47.116.79.134'
+
+function joinUrl(base, path) {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  return base.replace(/\/$/, '') + '/' + path.replace(/^\//, '')
+}
+
 /**
  * 获取照片完整 URL
  */
 function getPhotoUrl(photo) {
-  return photo.startsWith('http') ? photo : BASE_URL + photo
+  const url = joinUrl(STATIC_BASE_URL, photo)
+  console.log('衣物图片最终地址：', url)
+  return url
 }
-
 /**
  * 获取二维码完整 URL
  */
 function getQrCodeUrl(qrCode) {
-  if (!qrCode) return ''
-  return qrCode.startsWith('http') ? qrCode : BASE_URL + qrCode
+  const url = joinUrl(STATIC_BASE_URL, qrCode)
+  console.log('二维码最终地址：', url)
+  return url
 }
 
+function getLocalImagePath(url) {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve('')
+      return
+    }
+
+    uni.getImageInfo({
+      src: url,
+      success: (res) => {
+        console.log('图片转本地成功：', url, res.path)
+        resolve(res.path)
+      },
+      fail: (err) => {
+        console.log('图片转本地失败，使用原地址：', url, err)
+        resolve(url)
+      }
+    })
+  })
+}
+
+async function prepareDisplayImages() {
+  const photoUrls = photoList.value.map(p => getPhotoUrl(p))
+  displayPhotoList.value = await Promise.all(photoUrls.map(url => getLocalImagePath(url)))
+
+  if (order.value?.qrCode) {
+    const qrUrl = getQrCodeUrl(order.value.qrCode)
+    displayQrCode.value = await getLocalImagePath(qrUrl)
+  } else {
+    displayQrCode.value = ''
+  }
+
+  console.log('最终展示图片列表：', displayPhotoList.value)
+  console.log('最终展示二维码：', displayQrCode.value)
+}
+function onImageLoad(e) {
+  console.log('图片加载成功：', e)
+}
+
+function onImageError(e) {
+  console.log('图片加载失败：', e)
+}
 /**
  * 预览二维码（全屏查看）
  */
 function previewQrCode() {
   if (!order.value?.qrCode) return
-  const url = getQrCodeUrl(order.value.qrCode)
+
+  const url = displayQrCode.value || getQrCodeUrl(order.value.qrCode)
   if (!url) return
+
   uni.previewImage({
     current: url,
     urls: [url]
@@ -570,7 +632,10 @@ function previewQrCode() {
  * 预览照片（全屏查看）
  */
 function previewPhoto(index) {
-  const urls = photoList.value.map(p => getPhotoUrl(p))
+  const urls = displayPhotoList.value.length
+    ? displayPhotoList.value
+    : photoList.value.map(p => getPhotoUrl(p))
+
   uni.previewImage({
     current: urls[index],
     urls
@@ -898,6 +963,9 @@ async function submitComplaint() {
   width: 200rpx;
   height: 200rpx;
   border-radius: 12rpx;
+  display: block;
+  flex-shrink: 0;
+  background-color: #f5f5f5;
 }
 
 /* 溯源二维码 */
@@ -911,7 +979,8 @@ async function submitComplaint() {
   width: 360rpx;
   height: 360rpx;
   border-radius: 12rpx;
-  background: #fff;
+  background: #f5f5f5;
+  display: block;
 }
 .qr-tip {
   display: block;

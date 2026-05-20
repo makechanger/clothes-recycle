@@ -6,10 +6,10 @@ spring:
   # ===== 数据源配置（MySQL 8.0） =====
   datasource:
     url: jdbc:mysql://localhost:3306/clothes_recycle?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
-    # username: recycle
-    # password: "#Hjt040710"
+    # username: root
+    # password: 123456
+    username: recycle
+    password: "#Hjt040710"
     driver-class-name: com.mysql.cj.jdbc.Driver
   # ===== 文件上传大小限制 =====
   servlet:

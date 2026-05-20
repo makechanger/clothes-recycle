@@ -7,13 +7,13 @@ export default defineConfig({
     port: 3100,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
-        // target: 'http://47.116.79.134:8080',
+        // target: 'http://localhost:8080',
+        target: 'http://47.116.79.134:8080',
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://localhost:8080',
-        // target: 'http://47.116.79.134:8080',
+        // target: 'http://localhost:8080',
+        target: 'http://47.116.79.134:8080',
         changeOrigin: true
       }
     }
